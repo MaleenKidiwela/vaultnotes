@@ -1,0 +1,23 @@
+schema_version: 1
+
+site:
+  title: "{{SITE_TITLE}}"
+  wordmark: "{{WORDMARK}}"
+  theme: "{{THEME}}"        # midnight | paper
+  accent: "{{ACCENT}}"      # optional override; leave empty for theme default
+
+vault:
+  path: "{{VAULT_PATH}}"
+
+# Only these folders are synced and published. Everything else in the vault is ignored.
+projects:
+{{PROJECTS_BLOCK}}
+
+github:
+  repo: "{{GITHUB_REPO}}"   # owner/name; typically <username>/<username>.github.io
+  branch: "main"
+  local_clone: "~/.local/share/vaultnotes/pages-repo"
+
+schedule:
+  enabled: true
+  time: "{{SCHEDULE_TIME}}"

@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{SITE_TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<style>
+
+:root {
+{{ROOT_VARS}}
+  --sidebar-w: 304px;
+  --header-h:  58px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Spectral', Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.65;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -5%, rgba(14,100,160,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 70% at 100% 100%, rgba(18,205,216,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 50% at 0% 60%, rgba(56,219,160,0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Header ── */
+header {
+  height: var(--header-h);
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 25%, var(--accent) 75%, transparent 100%);
+  opacity: 0.22;
+}
+
+.wordmark {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wordmark .accent-dot { color: var(--accent); }
+
+.divider {
+  width: 1px; height: 22px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.project-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.tab-sep {
+  width: 1px; height: 18px;
+  background: var(--border);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-2);
+  transition: all 0.18s ease;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.tab:hover { color: var(--text); background: var(--bg3); border-color: var(--border-2); }
+
+.tab[data-project="Dashboard"].active {
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-color: var(--accent-dim);
+}
+
+{{PROJECT_TAB_CSS}}
+
+.tab-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+{{PROJECT_DOT_CSS}}
+
+.tab-dash-icon { font-size: 15px; opacity: 0.8; }
+
+.back-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  text-decoration: none;
+  letter-spacing: 0.07em;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.back-link:hover { color: var(--text-2); }
+
+/* ── Layout ── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.layout.dashboard-mode aside { display: none; }
+
+/* ── Sidebar ── */
+aside {
+  width: var(--sidebar-w);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 13px 18px 11px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.file-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+}
+
+.file-tree::-webkit-scrollbar { width: 3px; }
+.file-tree::-webkit-scrollbar-track { background: transparent; }
+.file-tree::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+.folder { margin-bottom: 4px; }
+
+.folder-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 18px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  transition: color 0.12s;
+  user-select: none;
+}
+
+.folder-label:hover { color: var(--accent); }
+
+.folder-label .chevron {
+  font-size: 9px;
+  transition: transform 0.2s ease;
+  color: var(--text-3);
+  width: 10px;
+  flex-shrink: 0;
+  text-align: center;
+  display: inline-block;
+}
+
+.folder.open .chevron { transform: rotate(90deg); }
+
+.folder-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.file-list { display: none; padding-left: 16px; padding-bottom: 6px; }
+.folder.open .file-list { display: block; }
+
+.file-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 16px 5px 10px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text-2);
+  border-left: 2px solid transparent;
+  transition: all 0.14s ease;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.45;
+}
+
+.file-item:hover { color: var(--text); border-left-color: var(--border-2); background: rgba(220,235,255,0.03); transform: translateX(2px); }
+.file-item.active { color: var(--text); border-left-color: var(--accent); background: var(--accent-glow); }
+.file-icon { color: var(--text-3); font-size: 10px; flex-shrink: 0; margin-top: 3px; }
+.file-item.active .file-icon { color: var(--accent); }
+
+/* ── Main ── */
+main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+main.dashboard-active .content-header { display: none; }
+main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
+
+.content-header {
+  padding: 11px 40px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+.breadcrumb {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.breadcrumb span { color: var(--text-2); }
+
+.content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 48px 80px 100px;
+}
+.content-scroll.iframe-mode {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.content-scroll.iframe-mode #content-area {
+  flex: 1;
+  height: 100%;
+}
+
+.content-scroll::-webkit-scrollbar { width: 4px; }
+.content-scroll::-webkit-scrollbar-track { background: transparent; }
+.content-scroll::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 14px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.empty-glyph { font-size: 40px; opacity: 0.22; margin-bottom: 8px; }
+.empty-state p { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.07em; }
+
+/* ── Project landing ── */
+.project-landing {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+  padding: 40px 48px;
+  align-content: start;
+}
+
+.project-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 22px 24px;
+  background: var(--bg2);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 8px 8px 0 0;
+}
+
+.project-card.coszo::before      { background: var(--coszo); }
+.project-card.bransfield::before { background: var(--bransfield); }
+.project-card.earthnote::before  { background: var(--earthnote); }
+
+.project-card:hover { transform: translateY(-2px); }
+.project-card.coszo:hover      { border-color: var(--coszo-dim);      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px var(--coszo-dim); }
+.project-card.bransfield:hover { border-color: var(--bransfield-dim); box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px var(--bransfield-dim); }
+.project-card.earthnote:hover  { border-color: var(--earthnote-dim);  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px var(--earthnote-dim); }
+
+.card-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 10px; }
+.card-label.coszo      { color: var(--coszo); }
+.card-label.bransfield { color: var(--bransfield); }
+.card-label.earthnote  { color: var(--earthnote); }
+
+.card-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400; color: var(--text); margin-bottom: 10px; line-height: 1.25; }
+.card-desc { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-2); line-height: 1.75; }
+.card-count { margin-top: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+
+/* ── Dashboard layout ── */
+.dashboard-layout {
+  display: flex;
+  height: 100%;
+}
+
+.cal-panel {
+  width: 340px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px 24px;
+  overflow-y: auto;
+  gap: 24px;
+}
+
+.cal-panel::-webkit-scrollbar { width: 3px; }
+.cal-panel::-webkit-scrollbar-track { background: transparent; }
+.cal-panel::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cal-month-label {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  text-align: center;
+  flex: 1;
+}
+
+.cal-nav-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  font-family: 'IBM Plex Mono', monospace;
+  line-height: 1;
+  transition: all 0.14s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cal-nav-btn:hover { color: var(--text); border-color: var(--border-2); background: var(--bg4); }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-dow {
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  padding: 6px 2px 8px;
+  text-transform: uppercase;
+}
+
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: default;
+  transition: all 0.14s;
+  position: relative;
+  padding: 5px 2px 4px;
+  gap: 3px;
+  min-height: 38px;
+}
+
+.cal-day.clickable { cursor: pointer; }
+.cal-day.clickable:hover { background: var(--bg3); }
+
+.cal-day-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1;
+}
+
+.cal-day.other-month .cal-day-num { color: var(--text-3); opacity: 0.5; }
+.cal-day.today { background: var(--accent-glow); }
+.cal-day.today .cal-day-num { color: var(--accent); font-weight: 500; }
+
+.cal-day.selected {
+  background: var(--bg4) !important;
+  border: 1px solid var(--border-2);
+  box-shadow: 0 0 0 1px var(--border-2) inset;
+}
+
+.cal-day.selected .cal-day-num { color: var(--text) !important; }
+
+.cal-dots {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  min-height: 5px;
+}
+
+.cal-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.cal-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+/* ── Notes panel (right side of dashboard) ── */
+.notes-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.notes-panel-header {
+  padding: 24px 32px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.notes-panel-title {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.notes-panel-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 5px;
+  letter-spacing: 0.05em;
+}
+
+.notes-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 32px 40px;
+}
+
+.notes-panel-body::-webkit-scrollbar { width: 4px; }
+.notes-panel-body::-webkit-scrollbar-track { background: transparent; }
+.notes-panel-body::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+.note-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  background: var(--bg2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.note-entry:hover { border-color: var(--border-2); transform: translateX(3px); background: var(--bg3); }
+.note-entry.highlighted { border-color: var(--border-2); background: var(--bg3); }
+
+.note-date-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  min-width: 50px;
+  flex-shrink: 0;
+}
+
+.note-proj-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.note-filename {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-open-hint {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: color 0.12s;
+}
+
+.note-entry:hover .note-open-hint { color: var(--accent); }
+
+.timeline-section-header {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 18px 0 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.timeline-section-header:first-child { padding-top: 0; }
+
+.no-notes-hint {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 24px 0;
+  letter-spacing: 0.06em;
+}
+
+/* ── Markdown ── */
+.md-body { max-width: 740px; font-size: 16px; line-height: 1.85; }
+
+.md-body h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 34px; font-weight: 400;
+  color: #eff0e8; margin-bottom: 26px; padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.22; letter-spacing: -0.015em;
+}
+
+.md-body h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 26px; font-weight: 400;
+  color: #dddbd0; margin: 44px 0 16px;
+  line-height: 1.28; letter-spacing: -0.01em;
+}
+
+.md-body h3 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent); margin: 34px 0 12px; font-weight: 400;
+}
+
+.md-body h4 { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-2); margin: 24px 0 10px; letter-spacing: 0.05em; }
+.md-body p  { color: var(--text); margin-bottom: 16px; line-height: 1.85; font-size: 16px; }
+.md-body ul, .md-body ol { margin: 0 0 16px 22px; color: var(--text); line-height: 1.85; }
+.md-body li { margin-bottom: 5px; font-size: 16px; }
+.md-body li input[type="checkbox"] { margin-right: 8px; accent-color: var(--accent); }
+
+.md-body .wikilink {
+  color: var(--accent); border-bottom: 1px dashed var(--accent-dim);
+  padding-bottom: 1px; cursor: pointer; text-decoration: none;
+}
+.md-body a.wikilink:hover { border-bottom-style: solid; text-decoration: none; }
+.md-body a.wikilink.broken {
+  color: var(--text-muted); border-bottom-color: var(--text-muted);
+  cursor: not-allowed;
+}
+.md-body mark {
+  background: rgba(245, 168, 51, 0.18); color: var(--text);
+  padding: 0 3px; border-radius: 2px;
+}
+.md-body .katex { font-size: 1.05em; }
+.md-body .katex-display { margin: 18px 0; overflow-x: auto; overflow-y: hidden; }
+
+.md-body code {
+  font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 2px 6px; border-radius: 3px; color: #a8d8c0;
+}
+
+.md-body pre {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-dim); padding: 20px 24px;
+  border-radius: 6px; overflow-x: auto; margin-bottom: 22px;
+}
+
+.md-body pre code { background: none; border: none; padding: 0; font-size: 13.5px; color: #c0d8c4; line-height: 1.72; }
+
+.md-body blockquote {
+  border-left: 3px solid var(--accent-dim); padding: 10px 20px; margin: 0 0 16px;
+  color: var(--text-2); font-style: italic;
+  background: var(--accent-glow); border-radius: 0 6px 6px 0;
+}
+
+.md-body table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; }
+.md-body th { background: var(--bg3); border: 1px solid var(--border); padding: 10px 14px; text-align: left; color: var(--accent); font-weight: 400; letter-spacing: 0.08em; font-size: 11px; text-transform: uppercase; }
+.md-body td { border: 1px solid var(--border); padding: 9px 14px; color: var(--text); line-height: 1.6; }
+.md-body tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.md-body hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+.md-body a { color: var(--accent); text-decoration: none; }
+.md-body a:hover { text-decoration: underline; }
+.md-body strong { color: #f0ece0; font-weight: 600; }
+.md-body em { color: var(--text-2); }
+
+/* ── Loading ── */
+.loading { display: flex; align-items: center; gap: 12px; color: var(--text-2); font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 52px 0; }
+.loading-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; box-shadow: 0 0 10px var(--accent); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.75); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+
+/* ── Status bar ── */
+.statusbar {
+  height: 26px; background: var(--bg2); border-top: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px; gap: 20px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3);
+  flex-shrink: 0; z-index: 10;
+}
+
+.status-item { display: flex; align-items: center; gap: 6px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--earthnote); box-shadow: 0 0 5px var(--earthnote); }
+
+/* ── Entrance ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+header    { animation: fadeUp 0.38s ease both; }
+aside     { animation: fadeUp 0.38s ease 0.07s both; }
+main      { animation: fadeUp 0.38s ease 0.13s both; }
+.statusbar{ animation: fadeUp 0.38s ease 0.17s both; }
+
+/* ── Hamburger (desktop: hidden) ── */
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  cursor: pointer;
+  width: 34px; height: 34px;
+  font-size: 17px;
+  flex-shrink: 0;
+  transition: all 0.14s;
+}
+.sidebar-toggle:hover { border-color: var(--border-2); color: var(--text); }
+
+/* ── Sidebar overlay (desktop: hidden) ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 99;
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.visible { display: block; }
+
+/* ─────────────────────────────────────────────
+   MOBILE  ≤ 768px
+───────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Header */
+  header {
+    padding: 0 12px;
+    gap: 10px;
+    height: 52px;
+  }
+
+  header::after { opacity: 0.15; }
+
+  .wordmark { font-size: 13px; }
+
+  .divider { display: none; }
+
+  .project-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+    flex: 1;
+  }
+  .project-tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    font-size: 12px;
+    padding: 5px 11px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .tab-dot { width: 6px; height: 6px; }
+
+  .back-link { display: none; }
+
+  .sidebar-toggle { display: flex; }
+
+  /* Sidebar — slides in as overlay on mobile */
+  aside {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    animation: none;
+    border-right: 1px solid var(--border-2);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+
+  aside.open { transform: translateX(0); }
+
+  .layout.dashboard-mode aside { display: none !important; }
+
+  /* Main layout — no overflow hidden, let it be a normal flow */
+  .layout { overflow: visible; height: auto; }
+
+  main { overflow: visible; }
+
+  main.dashboard-active .content-scroll {
+    overflow-y: auto;
+    padding: 0;
+    height: auto;
+  }
+
+  .content-header { padding: 10px 16px; }
+
+  .content-scroll {
+    padding: 20px 16px 80px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: auto;
+    flex: none;
+    min-height: 0;
+    max-width: 100vw;
+  }
+
+  .content-scroll.iframe-mode {
+    height: calc(100dvh - 52px - 44px);
+    overflow: hidden;
+  }
+
+  #content-area {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  /* Dashboard stacks vertically */
+  .dashboard-layout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .cal-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 20px 16px 20px;
+    gap: 18px;
+  }
+
+  .cal-nav-btn { width: 36px; height: 36px; font-size: 20px; }
+  .cal-month-label { font-size: 18px; }
+
+  .cal-day { min-height: 42px; }
+  .cal-day-num { font-size: 12px; }
+
+  .notes-panel { flex: none; overflow: visible; }
+
+  .notes-panel-header { padding: 18px 16px 12px; }
+  .notes-panel-title { font-size: 20px; }
+
+  .notes-panel-body {
+    flex: none;
+    overflow-y: visible;
+    padding: 14px 16px 40px;
+  }
+
+  .note-entry { gap: 8px; padding: 10px 12px; }
+  .note-filename { font-size: 12px; }
+  .note-open-hint { display: none; } /* too cramped on mobile */
+
+  /* Project landing — single column */
+  .project-landing {
+    grid-template-columns: 1fr;
+    padding: 20px 16px;
+    gap: 12px;
+  }
+
+  /* Markdown */
+  .md-body { font-size: 15px; }
+  .md-body h1 { font-size: 26px; }
+  .md-body h2 { font-size: 21px; }
+  .md-body h3 { font-size: 11px; }
+  .md-body table { font-size: 12px; }
+  .md-body th, .md-body td { padding: 7px 10px; }
+  .md-body pre { padding: 14px 16px; }
+  .md-body pre code { font-size: 12px; }
+
+  /* Status bar */
+  .statusbar { padding: 0 14px; font-size: 10px; height: 24px; }
+
+  /* Body — allow vertical scroll, prevent horizontal blowout */
+  body {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 100vh;
+  }
+
+  /* Header sticks to top so tabs are always reachable */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    animation: none;
+  }
+
+  /* Markdown content — constrain to viewport width */
+  .md-body {
+    max-width: 100%;
+    overflow-x: hidden;
+    word-break: break-word;
+  }
+
+  /* Tables scroll independently — let cells wrap naturally */
+  .md-body table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .md-body th,
+  .md-body td {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  /* Code blocks already have overflow-x:auto — just clamp width */
+  .md-body pre {
+    max-width: 100%;
+  }
+
+  /* Inline code — allow wrapping */
+  .md-body code {
+    word-break: break-all;
+    white-space: pre-wrap;
+  }
+
+  .md-body pre code {
+    word-break: normal;
+    white-space: pre;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle file browser">☰</button>
+  <a href="index.html" class="wordmark">{{WORDMARK_HTML}}</a>
+  <div class="divider"></div>
+  <nav class="project-tabs" id="project-tabs">
+    <button class="tab active" data-project="Dashboard" onclick="selectProject('Dashboard', this)">
+      <span class="tab-dash-icon">⊞</span>Dashboard
+    </button>
+    <div class="tab-sep"></div>
+{{PROJECT_TABS}}
+  </nav>
+  <a href="index.html" class="back-link">← portfolio</a>
+</header>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+<div class="layout">
+  <aside>
+    <div class="sidebar-header" id="sidebar-label">Explorer</div>
+    <div class="file-tree" id="file-tree"></div>
+  </aside>
+
+  <main>
+    <div class="content-header">
+      <div class="breadcrumb" id="breadcrumb">
+        <span id="bc-project">—</span>
+      </div>
+    </div>
+    <div class="content-scroll" id="content-scroll">
+      <div id="content-area"></div>
+    </div>
+  </main>
+</div>
+
+<div class="statusbar">
+  <div class="status-item"><div class="status-dot"></div> <span id="status-text">Select a file</span></div>
+</div>
+
+<script>
+// ── Project config ─────────────────────────────────────────────────────────
+const PROJECTS = {{PROJECTS_JS}};
+
+// ── State ──────────────────────────────────────────────────────────────────
+let activeProject = {{FIRST_PROJECT_JS}};
+let activeFile    = null;
+
+// ── Dashboard state ────────────────────────────────────────────────────────
+let calYear, calMonth;
+let selectedCalDate = null;
+
+// ── Date parsing ────────────────────────────────────────────────────────────
+// Matches "MM-DD-YY Notes.md" → { year, month (0-based), day, key }
+function parseNoteDate(filename) {
+  const m = filename.match(/^(\d{2})-(\d{2})-(\d{2})\s+Notes\.md$/i);
+  if (!m) return null;
+  const year  = 2000 + parseInt(m[3]);
+  const month = parseInt(m[1]) - 1;  // 0-based
+  const day   = parseInt(m[2]);
+  const key   = `${year}-${m[1]}-${m[2]}`;
+  return { year, month, day, key };
+}
+
+// ── Build date → notes map ─────────────────────────────────────────────────
+function buildDateMap() {
+  const map = {};
+  for (const [proj, cfg] of Object.entries(PROJECTS)) {
+    for (const fn of cfg.files) {
+      const d = parseNoteDate(fn);
+      if (!d) continue;
+      if (!map[d.key]) map[d.key] = [];
+      map[d.key].push({ project: proj, filename: fn, color: cfg.color });
+    }
+  }
+  return map;
+}
+
+// ── Show dashboard ─────────────────────────────────────────────────────────
+function showDashboard() {
+  document.querySelector('.layout').classList.add('dashboard-mode');
+  document.querySelector('main').classList.add('dashboard-active');
+  document.getElementById('status-text').textContent = 'Dashboard';
+
+  // Init calendar to month of most recent dated note, else today
+  if (calYear === undefined) {
+    const dateMap = buildDateMap();
+    const keys = Object.keys(dateMap).sort();
+    if (keys.length > 0) {
+      const [y, mm] = keys[keys.length - 1].split('-');
+      calYear = parseInt(y); calMonth = parseInt(mm) - 1;
+    } else {
+      const now = new Date();
+      calYear = now.getFullYear(); calMonth = now.getMonth();
+    }
+  }
+
+  const area = document.getElementById('content-area');
+  area.innerHTML = `
+    <div class="dashboard-layout">
+      <div class="cal-panel">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="shiftMonth(-1)">‹</button>
+          <span class="cal-month-label" id="cal-month-label"></span>
+          <button class="cal-nav-btn" onclick="shiftMonth(1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-legend" id="cal-legend"></div>
+      </div>
+      <div class="notes-panel">
+        <div class="notes-panel-header">
+          <div class="notes-panel-title" id="notes-panel-title">Research Journal</div>
+          <div class="notes-panel-sub"   id="notes-panel-sub">Select a highlighted date to view notes</div>
+        </div>
+        <div class="notes-panel-body" id="notes-panel-body"></div>
+      </div>
+    </div>
+  `;
+
+  renderCalendar();
+  autoSelectLatestDate();
+}
+
+// ── Render calendar ─────────────────────────────────────────────────────────
+function renderCalendar() {
+  const dateMap = buildDateMap();
+  const MONTH_NAMES = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+  const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  document.getElementById('cal-month-label').textContent =
+    `${MONTH_NAMES[calMonth]} ${calYear}`;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  // Day-of-week headers
+  DOW.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstDow    = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today       = new Date();
+
+  // Leading empty cells
+  for (let i = 0; i < firstDow; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day other-month';
+    el.innerHTML = '<span class="cal-day-num"></span><span class="cal-dots"></span>';
+    grid.appendChild(el);
+  }
+
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const mm  = String(calMonth + 1).padStart(2, '0');
+    const dd  = String(d).padStart(2, '0');
+    const key = `${calYear}-${mm}-${dd}`;
+    const notes = dateMap[key] || [];
+
+    const isToday    = (today.getFullYear() === calYear &&
+                        today.getMonth()    === calMonth &&
+                        today.getDate()     === d);
+    const isSelected = (selectedCalDate === key);
+
+    const el = document.createElement('div');
+    el.className = 'cal-day' +
+      (notes.length  ? ' clickable'  : '') +
+      (isToday       ? ' today'      : '') +
+      (isSelected    ? ' selected'   : '');
+
+    // Unique project colors present on this date
+    const colors = [...new Set(notes.map(n => n.color))];
+    const dotsHTML = colors.map(c =>
+      `<span class="cal-dot" style="background:var(--${c});box-shadow:0 0 4px var(--${c})"></span>`
+    ).join('');
+
+    el.innerHTML =
+      `<span class="cal-day-num">${d}</span>` +
+      `<span class="cal-dots">${dotsHTML}</span>`;
+
+    if (notes.length) {
+      el.onclick = () => selectCalDate(key, d, notes);
+    }
+
+    grid.appendChild(el);
+  }
+
+  // Legend
+  const legend = document.getElementById('cal-legend');
+  legend.innerHTML = Object.entries(PROJECTS).map(([, cfg]) =>
+    `<span class="cal-legend-item">
+      <span class="cal-dot" style="background:var(--${cfg.color});box-shadow:0 0 5px var(--${cfg.color})"></span>
+      <span>${cfg.label}</span>
+    </span>`
+  ).join('');
+}
+
+function shiftMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+// ── Select a calendar date ─────────────────────────────────────────────────
+function selectCalDate(key, day, notes) {
+  selectedCalDate = key;
+  renderCalendar();
+
+  const [year, mm] = key.split('-');
+  const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
+                        'Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthName = SHORT_MONTHS[parseInt(mm) - 1];
+
+  document.getElementById('notes-panel-title').textContent =
+    `${monthName} ${day}, ${year}`;
+  document.getElementById('notes-panel-sub').textContent =
+    `${notes.length} note${notes.length !== 1 ? 's' : ''} on this date`;
+
+  const body = document.getElementById('notes-panel-body');
+
+  const selectedHTML = notes.map(n => noteEntryHTML(n)).join('');
+
+  body.innerHTML = selectedHTML;
+}
+
+// ── Auto-select the most recent dated note on load ─────────────────────────
+function autoSelectLatestDate() {
+  const dateMap = buildDateMap();
+  const sortedKeys = Object.keys(dateMap).sort();
+  if (sortedKeys.length === 0) return;
+
+  const key   = sortedKeys[sortedKeys.length - 1];
+  const [, , dd] = key.split('-');
+  const notes = dateMap[key];
+  selectedCalDate = key;
+  renderCalendar();
+  selectCalDate(key, parseInt(dd), notes);
+}
+
+function noteEntryHTML(n) {
+  const esc = n.filename.replace(/'/g, "\\'");
+  return `
+    <div class="note-entry"
+         onclick="openNoteFromDashboard('${n.project}','${esc}')">
+      <span class="note-proj-badge"
+            style="background:var(--${n.color}-glow);color:var(--${n.color});border:1px solid var(--${n.color}-dim)">
+        ${n.project}
+      </span>
+      <span class="note-filename">${n.filename}</span>
+      <span class="note-open-hint">open →</span>
+    </div>`;
+}
+
+// ── Open note from dashboard ───────────────────────────────────────────────
+function openNoteFromDashboard(project, filename) {
+  // Exit dashboard mode
+  document.querySelector('.layout').classList.remove('dashboard-mode');
+  document.querySelector('main').classList.remove('dashboard-active');
+
+  // Activate the project tab
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const tabEl = document.querySelector(`.tab[data-project="${project}"]`);
+  if (tabEl) tabEl.classList.add('active');
+
+  activeProject = project;
+  activeFile    = null;
+
+  renderSidebar(project);
+
+  document.getElementById('breadcrumb').innerHTML =
+    `<span id="bc-project">${project}</span>`;
+
+  // Small delay to let DOM update before finding the file item
+  setTimeout(() => {
+    const items = document.querySelectorAll('.file-item');
+    let match = null;
+    items.forEach(i => { if (i.dataset.file === filename) match = i; });
+    loadFile(project, filename, match);
+  }, 40);
+}
+
+// ── Render sidebar ─────────────────────────────────────────────────────────
+function renderSidebar(project) {
+  const cfg  = PROJECTS[project];
+  const tree = document.getElementById('file-tree');
+  document.getElementById('sidebar-label').textContent = cfg.label.toUpperCase();
+
+  const folder = document.createElement('div');
+  folder.className = 'folder open';
+
+  const dotClass = `dot-${cfg.color}`;
+  folder.innerHTML = `
+    <div class="folder-label" onclick="this.parentElement.classList.toggle('open')">
+      <span class="chevron">▶</span>
+      <span class="folder-dot ${dotClass}"></span>
+      <span class="folder-name">${project}</span>
+    </div>
+    <div class="file-list" id="file-list"></div>
+  `;
+  tree.innerHTML = '';
+  tree.appendChild(folder);
+
+  const list = folder.querySelector('#file-list');
+  cfg.files.forEach(filename => {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.dataset.file = filename;
+    const icon = filename.endsWith('.html') ? '⬡' : '◈';
+    item.innerHTML = `<span class="file-icon">${icon}</span>${filename}`;
+    item.onclick = () => { loadFile(project, filename, item); closeSidebar(); };
+    list.appendChild(item);
+  });
+}
+
+// ── Project switch ─────────────────────────────────────────────────────────
+function selectProject(project, tabEl) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+
+  if (project === 'Dashboard') {
+    document.getElementById('sidebar-toggle').style.display = 'none';
+    showDashboard();
+    return;
+  }
+
+  document.getElementById('sidebar-toggle').style.display = '';
+
+  // Exit dashboard mode
+  document.querySelector('.layout').classList.remove('dashboard-mode');
+  document.querySelector('main').classList.remove('dashboard-active');
+
+  activeProject = project;
+  activeFile    = null;
+
+  renderSidebar(project);
+  showLanding(project);
+
+  document.getElementById('bc-project').textContent = project;
+  document.getElementById('status-text').textContent = `${PROJECTS[project].files.length} files`;
+}
+
+// ── Landing screen ─────────────────────────────────────────────────────────
+function showLanding(project) {
+  const cfg  = PROJECTS[project];
+  const area = document.getElementById('content-area');
+
+  area.innerHTML = `
+    <div class="project-landing">
+      <div class="project-card ${cfg.color}" onclick="">
+        <div class="card-label ${cfg.color}">${cfg.label}</div>
+        <div class="card-title">${cfg.label}</div>
+        <div class="card-desc" style="white-space:pre-line">${cfg.desc}</div>
+        <div class="card-count">◈ ${cfg.files.length} note${cfg.files.length !== 1 ? 's' : ''}</div>
+      </div>
+      ${cfg.files.map(f => `
+        <div class="project-card ${cfg.color}" style="padding:18px 24px;cursor:pointer"
+             onclick="loadFileByName('${project}','${f.replace(/'/g,"\\'")}')">
+          <div class="card-label ${cfg.color}" style="margin-bottom:6px">◈ md</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);line-height:1.5">${f}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  document.getElementById('breadcrumb').innerHTML =
+    `<span id="bc-project">${project}</span>`;
+}
+
+// ── Load a file ────────────────────────────────────────────────────────────
+// ── Wikilink helpers ───────────────────────────────────────────────────────
+const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const escAttr = s => escHtml(s).replace(/"/g,'&quot;');
+
+// Normalize for fuzzy filename matching: lowercase, strip .md, unify separators,
+// drop punctuation that Obsidian ignores in link resolution.
+function normKey(s) {
+  return String(s)
+    .toLowerCase()
+    .replace(/\.md$/, '')
+    .replace(/[_\s\-]+/g, ' ')
+    .trim();
+}
+
+// Build a {normalized-name → [{project, filename}]} index over all projects.
+let _wikiIndex = null;
+function wikiIndex() {
+  if (_wikiIndex) return _wikiIndex;
+  const idx = {};
+  for (const [project, cfg] of Object.entries(PROJECTS)) {
+    if (!cfg.files) continue;
+    for (const filename of cfg.files) {
+      const key = normKey(filename);
+      (idx[key] = idx[key] || []).push({ project, filename });
+    }
+  }
+  _wikiIndex = idx;
+  return idx;
+}
+
+// Resolve [[target]] → {project, filename} or null. Prefers current project.
+function resolveWikilink(target, fromProject) {
+  let t = String(target).split('#')[0].split('^')[0];
+  const slash = t.lastIndexOf('/');
+  if (slash !== -1) t = t.slice(slash + 1);
+  const hits = wikiIndex()[normKey(t)];
+  if (!hits || !hits.length) return null;
+  return hits.find(h => h.project === fromProject) || hits[0];
+}
+
+function hydrateWikilinks(container, fromProject) {
+  container.querySelectorAll('a.wikilink[data-target]').forEach(a => {
+    const target = a.getAttribute('data-target');
+    const hit = resolveWikilink(target, fromProject);
+    if (!hit) {
+      a.classList.add('broken');
+      a.title = `No note found for "${target}"`;
+      a.addEventListener('click', e => e.preventDefault());
+      return;
+    }
+    a.href = '#' + encodeURIComponent(hit.project) + '/' + encodeURIComponent(hit.filename);
+    a.title = `${hit.project} › ${hit.filename}`;
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      if (hit.project !== activeProject) {
+        const tab = document.querySelector(`.tab[data-project="${hit.project}"]`);
+        if (tab) selectProject(hit.project, tab);
+      }
+      setTimeout(() => loadFileByName(hit.project, hit.filename), 0);
+    });
+  });
+}
+
+function renderObsidianMarkdown(md) {
+  // 1. Extract math so marked's GFM doesn't mangle underscores/asterisks inside formulas.
+  const mathBlocks = [];
+  const stash = (tex, display) => `@@MATHBLOCK${mathBlocks.push({tex, display}) - 1}@@`;
+
+  let work = md
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => stash(tex.trim(), true))
+    .replace(/(?<![\\$])\$(?!\s)([^\$\n]+?)(?<!\s)\$(?!\$)/g, (_, tex) => stash(tex, false));
+
+  // 2. Obsidian-isms.
+  work = work
+    .replace(/!\[\[([^\]]+)\]\]/g, '_[image: $1]_')
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g,
+      (_, t, d) => `<a class="wikilink" data-target="${escAttr(t)}">${escHtml(d)}</a>`)
+    .replace(/\[\[([^\]]+)\]\]/g,
+      (_, t) => `<a class="wikilink" data-target="${escAttr(t)}">${escHtml(t)}</a>`)
+    .replace(/==([^=\n]+)==/g, '<mark>$1</mark>');
+
+  // 3. Markdown → HTML.
+  let html = marked.parse(work);
+
+  // 4. Restore math, rendered with KaTeX.
+  html = html.replace(/@@MATHBLOCK(\d+)@@/g, (_, i) => {
+    const { tex, display } = mathBlocks[+i];
+    if (!window.katex) return display ? `<pre>$$${tex}$$</pre>` : `<code>$${tex}$</code>`;
+    try {
+      return katex.renderToString(tex, { displayMode: display, throwOnError: false });
+    } catch (e) {
+      return `<code>${display ? '$$' + tex + '$$' : '$' + tex + '$'}</code>`;
+    }
+  });
+
+  return html;
+}
+
+async function loadFile(project, filename, itemEl) {
+  document.querySelectorAll('.file-item').forEach(i => i.classList.remove('active'));
+  if (itemEl) itemEl.classList.add('active');
+  activeFile = filename;
+  location.hash = encodeURIComponent(project) + '/' + encodeURIComponent(filename);
+
+  document.getElementById('breadcrumb').innerHTML =
+    `<span id="bc-project">${project}</span>
+     <span style="color:var(--text-muted)">›</span>
+     <span>${filename}</span>`;
+
+  document.getElementById('status-text').textContent = `Loading ${filename}…`;
+
+  const area = document.getElementById('content-area');
+  area.innerHTML = `<div class="loading"><div class="loading-dot"></div>Fetching ${filename}…</div>`;
+
+  const path = `/notes/${encodeURIComponent(project)}/${encodeURIComponent(filename)}`;
+
+  const scroll = document.getElementById('content-scroll');
+
+  // HTML files — render in a full-height iframe
+  if (filename.endsWith('.html')) {
+    scroll.classList.add('iframe-mode');
+    area.innerHTML = `<iframe src="${path}" style="width:100%;height:100%;border:none;display:block;"></iframe>`;
+    document.getElementById('status-text').textContent = filename;
+    return;
+  }
+
+  scroll.classList.remove('iframe-mode');
+
+  try {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const md = await res.text();
+
+    area.innerHTML = `<div class="md-body">${renderObsidianMarkdown(md)}</div>`;
+    area.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = true);
+    hydrateWikilinks(area, project);
+
+    document.getElementById('content-scroll').scrollTop = 0;
+    document.getElementById('status-text').textContent = filename;
+  } catch (err) {
+    area.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-glyph">⚠</div>
+        <p>Could not load file</p>
+        <p style="color:var(--text-muted);font-size:10px;margin-top:4px">${err.message}</p>
+        <p style="color:var(--text-muted);font-size:10px">Path: ${path}</p>
+      </div>`;
+    document.getElementById('status-text').textContent = 'Error loading file';
+  }
+}
+
+function loadFileByName(project, filename) {
+  const items = document.querySelectorAll('.file-item');
+  let match = null;
+  items.forEach(i => { if (i.dataset.file === filename) match = i; });
+  loadFile(project, filename, match);
+}
+
+// ── Mobile sidebar toggle ─────────────────────────────────────────────────
+function toggleSidebar() {
+  const aside   = document.querySelector('aside');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen  = aside.classList.toggle('open');
+  overlay.classList.toggle('visible', isOpen);
+}
+
+function closeSidebar() {
+  document.querySelector('aside').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('visible');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+marked.setOptions({ breaks: true, gfm: true });
+
+// Hash routing — open a specific file if URL contains #Project/filename
+(function () {
+  const hash = location.hash.slice(1);
+  if (!hash) { showDashboard(); return; }
+  const slash = hash.indexOf('/');
+  if (slash === -1) { showDashboard(); return; }
+  const project  = decodeURIComponent(hash.slice(0, slash));
+  const filename = decodeURIComponent(hash.slice(slash + 1));
+  const tabEl = document.querySelector(`.tab[data-project="${project}"]`);
+  if (!tabEl) { showDashboard(); return; }
+  selectProject(project, tabEl);
+  // Wait one tick for the file list to render, then load the file
+  setTimeout(() => loadFileByName(project, filename), 0);
+})();
+</script>
+</body>
+</html>
