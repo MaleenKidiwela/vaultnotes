@@ -3,6 +3,13 @@
 
 set -euo pipefail
 
+# When run via `curl … | bash`, stdin is the script itself, which breaks
+# `read` and any interactive child (gh auth login, vaultnotes init).
+# Reconnect stdin to the terminal so prompts work.
+if [ ! -t 0 ] && [ -r /dev/tty ]; then
+  exec < /dev/tty
+fi
+
 say() { printf '\n── %s\n' "$*"; }
 
 say "Checking Obsidian vault"
