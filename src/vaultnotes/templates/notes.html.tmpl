@@ -6,7 +6,7 @@
 <title>{{SITE_TITLE}}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -14,8 +14,19 @@
 
 :root {
 {{ROOT_VARS}}
+
   --sidebar-w: 304px;
   --header-h:  58px;
+
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Geist Mono', 'SF Mono', Menlo, monospace;
+  --font-serif: 'Fraunces', Georgia, serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-diffuse: 0 20px 40px -18px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.03) inset;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,13 +35,15 @@ html { font-size: 16px; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Spectral', Georgia, serif;
-  font-size: 1rem;
-  line-height: 1.65;
+  font-family: var(--font-sans);
+  font-size: 0.94rem;
+  line-height: 1.6;
   height: 100vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body::before {
@@ -38,9 +51,8 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 90% 45% at 50% -5%, rgba(14,100,160,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 70% at 100% 100%, rgba(18,205,216,0.04) 0%, transparent 50%),
-    radial-gradient(ellipse 40% 50% at 0% 60%, rgba(56,219,160,0.03) 0%, transparent 50%);
+    radial-gradient(ellipse 85% 40% at 50% -8%, rgba(75,184,192,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 65% at 100% 100%, rgba(152,132,216,0.025) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -64,16 +76,16 @@ header::after {
   position: absolute;
   bottom: -1px; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--accent) 25%, var(--accent) 75%, transparent 100%);
-  opacity: 0.22;
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 30%, var(--accent) 70%, transparent 100%);
+  opacity: 0.15;
 }
 
 .wordmark {
-  font-family: 'Syne', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--text);
-  letter-spacing: 0.04em;
+  letter-spacing: -0.005em;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -104,16 +116,16 @@ header::after {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px;
-  border-radius: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
-  font-family: 'Syne', sans-serif;
-  font-size: 13.5px;
+  font-family: var(--font-sans);
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.005em;
   color: var(--text-2);
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   background: transparent;
   white-space: nowrap;
 }
@@ -139,11 +151,11 @@ header::after {
 .tab-dash-icon { font-size: 15px; opacity: 0.8; }
 
 .back-link {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-3);
   text-decoration: none;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.02em;
   transition: color 0.15s;
   white-space: nowrap;
 }
@@ -172,13 +184,14 @@ aside {
 }
 
 .sidebar-header {
-  padding: 13px 18px 11px;
+  padding: 14px 20px 12px;
   border-bottom: 1px solid var(--border);
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-3);
+  font-weight: 500;
 }
 
 .file-tree {
@@ -197,11 +210,12 @@ aside {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 18px;
+  padding: 8px 20px;
   cursor: pointer;
-  font-family: 'Syne', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
   color: var(--text);
   transition: color 0.12s;
   user-select: none;
@@ -230,15 +244,23 @@ aside {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 5px 16px 5px 10px;
+  padding: 6px 16px 6px 10px;
   cursor: pointer;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-size: 12px;
   color: var(--text-2);
   border-left: 2px solid transparent;
-  transition: all 0.14s ease;
-  border-radius: 0 4px 4px 0;
-  line-height: 1.45;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  line-height: 1.5;
+  opacity: 0;
+  animation: fileItemIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 22ms);
+}
+
+@keyframes fileItemIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .file-item:hover { color: var(--text); border-left-color: var(--border-2); background: rgba(220,235,255,0.03); transform: translateX(2px); }
@@ -250,7 +272,22 @@ aside {
 main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 main.dashboard-active .content-header { display: none; }
-main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
+main.dashboard-active .content-scroll {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+main.dashboard-active #content-area {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+main.dashboard-active #content-area > .dashboard-layout {
+  flex: 1;
+  min-height: 0;
+}
 
 .content-header {
   padding: 11px 40px;
@@ -264,10 +301,10 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 }
 
 .breadcrumb {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
   color: var(--text-3);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -310,69 +347,359 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 }
 
 .empty-glyph { font-size: 40px; opacity: 0.22; margin-bottom: 8px; }
-.empty-state p { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.07em; }
+.empty-state p { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.02em; }
 
 /* ── Project landing ── */
 .project-landing {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 16px;
-  padding: 40px 48px;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 32px;
+  padding: 48px 56px 64px;
   align-content: start;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-.project-card {
+.project-hero {
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 22px 24px;
-  background: var(--bg2);
-  cursor: pointer;
-  transition: all 0.18s ease;
+  border-radius: var(--radius-lg);
+  padding: 32px 32px 28px;
+  background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-diffuse);
 }
 
-.project-card::before {
+.project-hero::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 2px;
-  border-radius: 8px 8px 0 0;
+  height: 1px;
 }
 
-.project-card.coszo::before      { background: var(--coszo); }
-.project-card.bransfield::before { background: var(--bransfield); }
-.project-card.earthnote::before  { background: var(--earthnote); }
+{{PROJECT_HERO_CSS}}
 
-.project-card:hover { transform: translateY(-2px); }
-.project-card.coszo:hover      { border-color: var(--coszo-dim);      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px var(--coszo-dim); }
-.project-card.bransfield:hover { border-color: var(--bransfield-dim); box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px var(--bransfield-dim); }
-.project-card.earthnote:hover  { border-color: var(--earthnote-dim);  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px var(--earthnote-dim); }
+.card-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 14px; font-weight: 500; }
+{{PROJECT_CARD_LABEL_CSS}}
 
-.card-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 10px; }
-.card-label.coszo      { color: var(--coszo); }
-.card-label.bransfield { color: var(--bransfield); }
-.card-label.earthnote  { color: var(--earthnote); }
+.card-title { font-family: var(--font-serif); font-size: 30px; font-weight: 400; color: var(--text); margin-bottom: 14px; line-height: 1.15; letter-spacing: -0.02em; }
+.card-desc { font-family: var(--font-sans); font-size: 14px; color: var(--text-2); line-height: 1.6; white-space: pre-line; }
+.card-count { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
 
-.card-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400; color: var(--text); margin-bottom: 10px; line-height: 1.25; }
-.card-desc { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-2); line-height: 1.75; }
-.card-count { margin-top: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+/* File list on the right */
+.landing-files {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-files-head {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 0 4px 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.landing-file {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  animation: fileItemIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+
+.landing-file:hover { padding-left: 12px; border-bottom-color: var(--border-2); }
+.landing-file:hover .landing-file-arrow { opacity: 1; transform: translateX(0); }
+
+.landing-file-icon {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  width: 16px;
+}
+
+.landing-file-name {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.landing-file-arrow {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-3);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+{{PROJECT_LANDING_FILE_CSS}}
 
 /* ── Dashboard layout ── */
 .dashboard-layout {
-  display: flex;
+  position: relative;
   height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 50% at 30% 35%, rgba(75,184,192,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 70% 65%, rgba(152,132,216,0.03) 0%, transparent 60%);
 }
 
-.cal-panel {
-  width: 340px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--border);
+/* ── Constellation stage (fills dashboard) ── */
+.constellation-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.constellation-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.constellation-stage canvas:active { cursor: grabbing; }
+
+.constellation-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--bg2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -130%);
+  transition: opacity 0.15s ease;
+  z-index: 5;
+  box-shadow: var(--shadow-diffuse);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.constellation-tooltip.visible { opacity: 1; }
+
+.constellation-tooltip .tt-label {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 3px;
+  font-weight: 500;
+}
+
+/* HUD overlay — sits on top of canvas */
+.dashboard-hud {
+  position: absolute;
+  top: 28px;
+  left: 32px;
+  z-index: 3;
+  pointer-events: none;
+  max-width: 420px;
+}
+
+.hud-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.hud-title {
+  font-family: var(--font-serif);
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 12px;
+  max-width: 14ch;
+}
+
+.hud-sub {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.55;
+  max-width: 360px;
+}
+
+.hud-hint {
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hud-hint .kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--border-2);
+  border-radius: 3px;
+  background: rgba(255,255,255,0.03);
+  font-size: 9.5px;
+  color: var(--text-2);
+}
+
+.hud-stats {
+  display: flex;
+  gap: 28px;
+  margin-top: 22px;
+  font-family: var(--font-mono);
+}
+
+.hud-stat { display: flex; flex-direction: column; gap: 4px; }
+.hud-stat-n  { font-size: 22px; color: var(--text); letter-spacing: -0.01em; }
+.hud-stat-l  { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3); }
+
+/* Floating calendar — bottom-right card */
+.cal-floating {
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
+  z-index: 4;
+  width: 300px;
+  background: rgba(19, 19, 24, 0.82);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  padding: 18px 18px 16px;
   display: flex;
   flex-direction: column;
-  padding: 28px 24px 24px;
+  gap: 14px;
+  box-shadow:
+    0 24px 60px -20px rgba(0,0,0,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+/* When drawer opens, tuck calendar behind it */
+.notes-drawer.open ~ .cal-floating,
+.dashboard-layout.drawer-open .cal-floating {
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+}
+
+/* Notes drawer — slides in from right when a date is selected */
+.notes-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  z-index: 4;
+  background: rgba(19, 19, 24, 0.92);
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+  border-left: 1px solid var(--border-2);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: -24px 0 60px -20px rgba(0,0,0,0.6);
+}
+
+.notes-drawer.open { transform: translateX(0); }
+
+.notes-drawer-head {
+  padding: 28px 28px 18px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.notes-drawer-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+.notes-drawer-close:hover { color: var(--text); border-color: var(--border-2); }
+
+.notes-drawer-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.notes-drawer-title {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.notes-drawer-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+.notes-drawer-body {
+  flex: 1;
   overflow-y: auto;
-  gap: 24px;
+  padding: 22px 28px 32px;
+}
+
+.notes-drawer-body::-webkit-scrollbar { width: 4px; }
+.notes-drawer-body::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+.cal-panel-legacy-hide { display: none; }
+
+.cal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .cal-panel::-webkit-scrollbar { width: 3px; }
@@ -387,11 +714,11 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 }
 
 .cal-month-label {
-  font-family: 'Fraunces', serif;
-  font-size: 20px;
+  font-family: var(--font-serif);
+  font-size: 22px;
   font-weight: 400;
   color: var(--text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   text-align: center;
   flex: 1;
 }
@@ -401,17 +728,19 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
   border: 1px solid var(--border);
   color: var(--text-2);
   width: 32px; height: 32px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 18px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  font-family: var(--font-mono);
   line-height: 1;
-  transition: all 0.14s;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
+
+.cal-nav-btn:active { transform: translateY(1px); }
 
 .cal-nav-btn:hover { color: var(--text); border-color: var(--border-2); background: var(--bg4); }
 
@@ -423,12 +752,13 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 
 .cal-dow {
   text-align: center;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--text-3);
   padding: 6px 2px 8px;
   text-transform: uppercase;
+  font-weight: 500;
 }
 
 .cal-day {
@@ -449,8 +779,8 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 .cal-day.clickable:hover { background: var(--bg3); }
 
 .cal-day-num {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
   color: var(--text-2);
   line-height: 1;
 }
@@ -492,9 +822,10 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-2);
+  letter-spacing: 0.02em;
 }
 
 /* ── Notes panel (right side of dashboard) ── */
@@ -512,20 +843,20 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 }
 
 .notes-panel-title {
-  font-family: 'Fraunces', serif;
-  font-size: 26px;
+  font-family: var(--font-serif);
+  font-size: 28px;
   font-weight: 400;
   color: var(--text);
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 .notes-panel-sub {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-3);
-  margin-top: 5px;
-  letter-spacing: 0.05em;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
 }
 
 .notes-panel-body {
@@ -541,21 +872,22 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 .note-entry {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 16px;
-  border-radius: 7px;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   margin-bottom: 8px;
   background: var(--bg2);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.note-entry:hover { border-color: var(--border-2); transform: translateX(3px); background: var(--bg3); }
+.note-entry:hover { border-color: var(--border-2); transform: translateX(2px); background: var(--bg3); box-shadow: var(--shadow-diffuse); }
+.note-entry:active { transform: translateX(2px) scale(0.99); }
 .note-entry.highlighted { border-color: var(--border-2); background: var(--bg3); }
 
 .note-date-badge {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-3);
   min-width: 50px;
@@ -563,18 +895,19 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 }
 
 .note-proj-badge {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9.5px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 4px;
   flex-shrink: 0;
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .note-filename {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   color: var(--text);
   flex: 1;
@@ -584,7 +917,7 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 }
 
 .note-open-hint {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-3);
   flex-shrink: 0;
@@ -594,54 +927,55 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 .note-entry:hover .note-open-hint { color: var(--accent); }
 
 .timeline-section-header {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-3);
   padding: 18px 0 12px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 14px;
+  font-weight: 500;
 }
 
 .timeline-section-header:first-child { padding-top: 0; }
 
 .no-notes-hint {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-3);
   padding: 24px 0;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
 }
 
 /* ── Markdown ── */
-.md-body { max-width: 740px; font-size: 16px; line-height: 1.85; }
+.md-body { max-width: 720px; font-size: 15.5px; line-height: 1.78; font-family: var(--font-serif); }
 
 .md-body h1 {
-  font-family: 'Fraunces', serif;
-  font-size: 34px; font-weight: 400;
-  color: #eff0e8; margin-bottom: 26px; padding-bottom: 14px;
+  font-family: var(--font-serif);
+  font-size: 36px; font-weight: 400;
+  color: #f0f0ef; margin-bottom: 28px; padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
-  line-height: 1.22; letter-spacing: -0.015em;
+  line-height: 1.15; letter-spacing: -0.025em;
 }
 
 .md-body h2 {
-  font-family: 'Fraunces', serif;
-  font-size: 26px; font-weight: 400;
-  color: #dddbd0; margin: 44px 0 16px;
-  line-height: 1.28; letter-spacing: -0.01em;
+  font-family: var(--font-serif);
+  font-size: 24px; font-weight: 400;
+  color: #dcdcdb; margin: 44px 0 14px;
+  line-height: 1.25; letter-spacing: -0.018em;
 }
 
 .md-body h3 {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--accent); margin: 34px 0 12px; font-weight: 400;
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent); margin: 34px 0 12px; font-weight: 500;
 }
 
-.md-body h4 { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-2); margin: 24px 0 10px; letter-spacing: 0.05em; }
-.md-body p  { color: var(--text); margin-bottom: 16px; line-height: 1.85; font-size: 16px; }
-.md-body ul, .md-body ol { margin: 0 0 16px 22px; color: var(--text); line-height: 1.85; }
-.md-body li { margin-bottom: 5px; font-size: 16px; }
+.md-body h4 { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-2); margin: 24px 0 10px; letter-spacing: 0.04em; font-weight: 500; }
+.md-body p  { color: var(--text); margin-bottom: 16px; line-height: 1.78; font-size: 15.5px; }
+.md-body ul, .md-body ol { margin: 0 0 16px 22px; color: var(--text); line-height: 1.78; }
+.md-body li { margin-bottom: 5px; font-size: 15.5px; }
 .md-body li input[type="checkbox"] { margin-right: 8px; accent-color: var(--accent); }
 
 .md-body .wikilink {
@@ -661,27 +995,27 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 .md-body .katex-display { margin: 18px 0; overflow-x: auto; overflow-y: hidden; }
 
 .md-body code {
-  font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;
+  font-family: var(--font-mono); font-size: 13px;
   background: var(--bg3); border: 1px solid var(--border);
-  padding: 2px 6px; border-radius: 3px; color: #a8d8c0;
+  padding: 2px 6px; border-radius: 4px; color: #9cd0b8;
 }
 
 .md-body pre {
   background: var(--bg3); border: 1px solid var(--border);
-  border-left: 3px solid var(--accent-dim); padding: 20px 24px;
-  border-radius: 6px; overflow-x: auto; margin-bottom: 22px;
+  border-left: 2px solid var(--accent-dim); padding: 20px 24px;
+  border-radius: var(--radius-md); overflow-x: auto; margin-bottom: 22px;
 }
 
-.md-body pre code { background: none; border: none; padding: 0; font-size: 13.5px; color: #c0d8c4; line-height: 1.72; }
+.md-body pre code { background: none; border: none; padding: 0; font-size: 13px; color: #c0d8c4; line-height: 1.7; }
 
 .md-body blockquote {
-  border-left: 3px solid var(--accent-dim); padding: 10px 20px; margin: 0 0 16px;
+  border-left: 2px solid var(--accent-dim); padding: 12px 22px; margin: 0 0 16px;
   color: var(--text-2); font-style: italic;
-  background: var(--accent-glow); border-radius: 0 6px 6px 0;
+  background: var(--accent-glow); border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
-.md-body table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; }
-.md-body th { background: var(--bg3); border: 1px solid var(--border); padding: 10px 14px; text-align: left; color: var(--accent); font-weight: 400; letter-spacing: 0.08em; font-size: 11px; text-transform: uppercase; }
+.md-body table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-family: var(--font-mono); font-size: 13px; }
+.md-body th { background: var(--bg3); border: 1px solid var(--border); padding: 10px 14px; text-align: left; color: var(--accent); font-weight: 500; letter-spacing: 0.06em; font-size: 10.5px; text-transform: uppercase; }
 .md-body td { border: 1px solid var(--border); padding: 9px 14px; color: var(--text); line-height: 1.6; }
 .md-body tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 .md-body hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
@@ -690,25 +1024,44 @@ main.dashboard-active .content-scroll { padding: 0; overflow: hidden; }
 .md-body strong { color: #f0ece0; font-weight: 600; }
 .md-body em { color: var(--text-2); }
 
-/* ── Loading ── */
-.loading { display: flex; align-items: center; gap: 12px; color: var(--text-2); font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 52px 0; }
-.loading-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; box-shadow: 0 0 10px var(--accent); }
+/* ── Loading (skeleton shimmer) ── */
+.loading { display: flex; flex-direction: column; gap: 14px; max-width: 720px; padding: 8px 0; }
+.skel {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--bg2) 0%, var(--bg3) 50%, var(--bg2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+.skel.h1 { height: 32px; width: 55%; margin-bottom: 14px; }
+.skel.p  { width: 100%; }
+.skel.p.short { width: 72%; }
+.skel.p.mid   { width: 88%; }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.2; transform: scale(0.75); }
-  50%       { opacity: 1;   transform: scale(1.2); }
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ── Status bar ── */
 .statusbar {
   height: 26px; background: var(--bg2); border-top: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 20px; gap: 20px;
-  font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-3);
-  flex-shrink: 0; z-index: 10;
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3);
+  flex-shrink: 0; z-index: 10; letter-spacing: 0.01em;
 }
 
-.status-item { display: flex; align-items: center; gap: 6px; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--earthnote); box-shadow: 0 0 5px var(--earthnote); }
+.status-item { display: flex; align-items: center; gap: 7px; }
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  animation: breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
 
 /* ── Entrance ── */
 @keyframes fadeUp {
@@ -839,17 +1192,64 @@ main      { animation: fadeUp 0.38s ease 0.13s both; }
     max-width: 100%;
   }
 
-  /* Dashboard stacks vertically */
+  /* Dashboard stacks vertically on mobile */
+  main.dashboard-active .content-scroll { overflow-y: auto; }
+  main.dashboard-active #content-area { display: block; flex: none; }
   .dashboard-layout {
-    flex-direction: column;
+    display: block;
+    position: relative;
     height: auto;
+    min-height: 0;
+    overflow: visible;
   }
+  .constellation-stage {
+    position: relative;
+    inset: auto;
+    height: 52vh;
+    min-height: 340px;
+    max-height: 480px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dashboard-hud {
+    position: static;
+    padding: 22px 18px 4px;
+    max-width: none;
+  }
+  .hud-title { font-size: 24px; margin-bottom: 10px; max-width: none; }
+  .hud-sub { font-size: 12.5px; }
+  .hud-stats { gap: 22px; margin-top: 16px; }
+  .hud-stat-n { font-size: 18px; }
+  .hud-hint { margin-top: 12px; }
+
+  .cal-floating {
+    position: static;
+    width: auto;
+    margin: 14px 18px 28px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--bg2);
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+  .notes-drawer {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 72dvh;
+    border-left: none;
+    border-top: 1px solid var(--border-2);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    transform: translateY(100%);
+  }
+  .notes-drawer.open { transform: translateY(0); }
 
   .cal-panel {
     width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding: 20px 16px 20px;
+    padding: 0;
     gap: 18px;
   }
 
@@ -870,6 +1270,10 @@ main      { animation: fadeUp 0.38s ease 0.13s both; }
     padding: 14px 16px 40px;
   }
 
+  .notes-drawer-head { padding: 18px 20px 14px; }
+  .notes-drawer-title { font-size: 22px; }
+  .notes-drawer-body { padding: 18px 20px 32px; }
+
   .note-entry { gap: 8px; padding: 10px 12px; }
   .note-filename { font-size: 12px; }
   .note-open-hint { display: none; } /* too cramped on mobile */
@@ -877,9 +1281,12 @@ main      { animation: fadeUp 0.38s ease 0.13s both; }
   /* Project landing — single column */
   .project-landing {
     grid-template-columns: 1fr;
-    padding: 20px 16px;
-    gap: 12px;
+    padding: 20px 16px 40px;
+    gap: 24px;
   }
+  .project-hero { padding: 24px 22px 22px; }
+  .card-title { font-size: 26px; }
+  .card-desc { font-size: 13.5px; }
 
   /* Markdown */
   .md-body { font-size: 15px; }
@@ -953,7 +1360,7 @@ main      { animation: fadeUp 0.38s ease 0.13s both; }
 
 <header>
   <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle file browser">☰</button>
-  <a href="index.html" class="wordmark">{{WORDMARK_HTML}}</a>
+  {{WORDMARK_HTML}}
   <div class="divider"></div>
   <nav class="project-tabs" id="project-tabs">
     <button class="tab active" data-project="Dashboard" onclick="selectProject('Dashboard', this)">
@@ -990,10 +1397,12 @@ main      { animation: fadeUp 0.38s ease 0.13s both; }
 
 <script>
 // ── Project config ─────────────────────────────────────────────────────────
-const PROJECTS = {{PROJECTS_JS}};
+const PROJECTS = {
+{{PROJECTS_JS}}
+};
 
 // ── State ──────────────────────────────────────────────────────────────────
-let activeProject = {{FIRST_PROJECT_JS}};
+let activeProject = '{{FIRST_PROJECT_JS}}';
 let activeFile    = null;
 
 // ── Dashboard state ────────────────────────────────────────────────────────
@@ -1026,13 +1435,15 @@ function buildDateMap() {
   return map;
 }
 
+// ── Constellation state ────────────────────────────────────────────────────
+let __constellation = null; // { nodes, rafId, canvas, ctx, tooltip, dpr, w, h, hoverId }
+
 // ── Show dashboard ─────────────────────────────────────────────────────────
 function showDashboard() {
   document.querySelector('.layout').classList.add('dashboard-mode');
   document.querySelector('main').classList.add('dashboard-active');
   document.getElementById('status-text').textContent = 'Dashboard';
 
-  // Init calendar to month of most recent dated note, else today
   if (calYear === undefined) {
     const dateMap = buildDateMap();
     const keys = Object.keys(dateMap).sort();
@@ -1045,30 +1456,522 @@ function showDashboard() {
     }
   }
 
+  const totalNotes = Object.values(PROJECTS).reduce((s,c) => s + c.files.length, 0);
+  const dateMap = buildDateMap();
+  const activeDays = Object.keys(dateMap).length;
+
   const area = document.getElementById('content-area');
   area.innerHTML = `
     <div class="dashboard-layout">
-      <div class="cal-panel">
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="shiftMonth(-1)">‹</button>
-          <span class="cal-month-label" id="cal-month-label"></span>
-          <button class="cal-nav-btn" onclick="shiftMonth(1)">›</button>
-        </div>
-        <div class="cal-grid" id="cal-grid"></div>
-        <div class="cal-legend" id="cal-legend"></div>
+      <div class="constellation-stage" id="constellation-stage">
+        <canvas id="constellation-canvas"></canvas>
+        <div class="constellation-tooltip" id="constellation-tooltip"></div>
       </div>
-      <div class="notes-panel">
-        <div class="notes-panel-header">
-          <div class="notes-panel-title" id="notes-panel-title">Research Journal</div>
-          <div class="notes-panel-sub"   id="notes-panel-sub">Select a highlighted date to view notes</div>
+
+      <div class="dashboard-hud">
+        <div class="hud-eyebrow">Research Constellation</div>
+        <div class="hud-title">A living map of everything you're working on.</div>
+        <div class="hud-sub">Each node is a note; gravity pulls it toward its project. Hover to read, click to open. Use the calendar to isolate a date.</div>
+        <div class="hud-stats">
+          <div class="hud-stat"><span class="hud-stat-n">${String(totalNotes).padStart(2,'0')}</span><span class="hud-stat-l">Notes</span></div>
+          <div class="hud-stat"><span class="hud-stat-n">${String(activeDays).padStart(2,'0')}</span><span class="hud-stat-l">Active days</span></div>
+          <div class="hud-stat"><span class="hud-stat-n">${Object.keys(PROJECTS).length}</span><span class="hud-stat-l">Projects</span></div>
         </div>
-        <div class="notes-panel-body" id="notes-panel-body"></div>
+        <div class="hud-hint"><span class="kbd">drag</span> to reposition <span style="opacity:0.5">·</span> <span class="kbd">click</span> to open</div>
+      </div>
+
+      <div class="cal-floating">
+        <div class="cal-panel">
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="shiftMonth(-1)" aria-label="Previous month">‹</button>
+            <span class="cal-month-label" id="cal-month-label"></span>
+            <button class="cal-nav-btn" onclick="shiftMonth(1)" aria-label="Next month">›</button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <div class="cal-legend" id="cal-legend"></div>
+        </div>
+      </div>
+
+      <div class="notes-drawer" id="notes-drawer">
+        <div class="notes-drawer-head">
+          <button class="notes-drawer-close" onclick="closeDateDrawer()" aria-label="Close">×</button>
+          <div class="notes-drawer-eyebrow" id="drawer-eyebrow">Date selection</div>
+          <div class="notes-drawer-title" id="drawer-title">—</div>
+          <div class="notes-drawer-sub"   id="drawer-sub">—</div>
+        </div>
+        <div class="notes-drawer-body" id="drawer-body"></div>
       </div>
     </div>
   `;
 
   renderCalendar();
-  autoSelectLatestDate();
+  requestAnimationFrame(() => initConstellation());
+}
+
+// ── Constellation: build nodes & physics ───────────────────────────────────
+function buildConstellationNodes() {
+  const projectKeys = Object.keys(PROJECTS);
+  const nodes = [];
+
+  projectKeys.forEach((proj, pIdx) => {
+    const cfg = PROJECTS[proj];
+    cfg.files.forEach((filename, fIdx) => {
+      const d = parseNoteDate(filename);
+      const isHtml = filename.endsWith('.html');
+      // Pinned project anchors get a bigger radius
+      const isAnchor = /^(Cascadia dv\.v|Cascadia Offshore|Bransfield Basin Earthquakes)/i.test(filename);
+      nodes.push({
+        id: `${proj}/${filename}`,
+        project: proj,
+        projectIdx: pIdx,
+        filename,
+        color: cfg.color,
+        accent: cfg.accent,
+        date: d ? d.key : null,
+        isAnchor,
+        isHtml,
+        r: isAnchor ? 9 : (d ? 5.2 : 6),
+        x: 0, y: 0, vx: 0, vy: 0
+      });
+    });
+  });
+
+  return nodes;
+}
+
+function initConstellation() {
+  const canvas  = document.getElementById('constellation-canvas');
+  const tooltip = document.getElementById('constellation-tooltip');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const nodes = buildConstellationNodes();
+
+  // Initial scatter
+  const stage = document.getElementById('constellation-stage');
+  const rect = stage.getBoundingClientRect();
+  nodes.forEach(n => {
+    const pIdx = n.projectIdx;
+    const numP = Object.keys(PROJECTS).length;
+    const cx = rect.width  * (0.30 + 0.20 * pIdx);
+    const cy = rect.height * (0.50 + (pIdx % 2 === 0 ? -0.05 : 0.05));
+    n.x = cx + (Math.random() - 0.5) * 180;
+    n.y = cy + (Math.random() - 0.5) * 140;
+  });
+
+  __constellation = {
+    nodes, canvas, ctx, tooltip,
+    dpr: 1, w: 0, h: 0,
+    hoverId: null,
+    hoverCentroid: -1,
+    highlightKey: null,
+    rafId: null,
+    t: 0,
+    centroids: [] // filled after first resize
+  };
+
+  resizeConstellationCanvas();
+  initCentroids();
+  window.addEventListener('resize', resizeConstellationCanvas);
+
+  // Pointer events cover mouse + touch uniformly
+  canvas.addEventListener('pointermove', onConstellationPointerMove);
+  canvas.addEventListener('pointerleave', () => {
+    if (!__constellation || __constellation.drag) return;
+    __constellation.hoverId = null;
+    tooltip.classList.remove('visible');
+    canvas.style.cursor = 'grab';
+  });
+  canvas.addEventListener('pointerdown', onConstellationPointerDown);
+  window.addEventListener('pointermove', onConstellationPointerDrag);
+  window.addEventListener('pointerup', onConstellationPointerUp);
+  window.addEventListener('pointercancel', onConstellationPointerUp);
+
+  tickConstellation();
+}
+
+function pointerPos(e) {
+  const c = __constellation;
+  const rect = c.canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function hitTestNode(x, y) {
+  const c = __constellation;
+  let hit = null, bestD = 18;
+  for (const n of c.nodes) {
+    const dx = n.x - x, dy = n.y - y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < Math.max(bestD, n.r + 8)) { bestD = d; hit = n; }
+  }
+  return hit;
+}
+
+// Returns centroid index, or -1. Nodes take priority over centroid hit.
+function hitTestCentroid(x, y) {
+  const c = __constellation;
+  for (let i = 0; i < c.centroids.length; i++) {
+    const cc = c.centroids[i];
+    const dx = cc.x - x, dy = cc.y - y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    // Ring-shaped hot zone: between r-14 and r+14 for the ring, or within the label band
+    if (d > cc.r - 14 && d < cc.r + 14) return i;
+  }
+  return -1;
+}
+
+function onConstellationPointerMove(e) {
+  const c = __constellation;
+  if (!c || c.drag) return;
+  const { x, y } = pointerPos(e);
+  const hitNode = hitTestNode(x, y);
+  const hitC = hitNode ? -1 : hitTestCentroid(x, y);
+
+  c.hoverId = hitNode ? hitNode.id : null;
+  c.hoverCentroid = hitC;
+  c.canvas.style.cursor = (hitNode || hitC >= 0) ? 'grab' : 'grab';
+
+  if (hitNode) {
+    c.tooltip.innerHTML =
+      `<span class="tt-label" style="color:var(--${hitNode.color})">${hitNode.project}</span>${hitNode.filename}`;
+    c.tooltip.style.left = `${hitNode.x}px`;
+    c.tooltip.style.top  = `${hitNode.y}px`;
+    c.tooltip.classList.add('visible');
+  } else if (hitC >= 0) {
+    const cc = c.centroids[hitC];
+    c.tooltip.innerHTML =
+      `<span class="tt-label" style="color:var(--${cc.color})">Cluster</span>${cc.label} — drag to reposition`;
+    c.tooltip.style.left = `${cc.x}px`;
+    c.tooltip.style.top  = `${cc.y - cc.r}px`;
+    c.tooltip.classList.add('visible');
+  } else {
+    c.tooltip.classList.remove('visible');
+  }
+}
+
+function resizeConstellationCanvas() {
+  const c = __constellation;
+  if (!c) return;
+  const stage = document.getElementById('constellation-stage');
+  const rect = stage.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const prevW = c.w, prevH = c.h;
+  c.w = rect.width; c.h = rect.height; c.dpr = dpr;
+  c.canvas.width  = Math.floor(rect.width * dpr);
+  c.canvas.height = Math.floor(rect.height * dpr);
+  c.canvas.style.width  = rect.width + 'px';
+  c.canvas.style.height = rect.height + 'px';
+  c.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Rescale existing centroids proportionally
+  if (c.centroids.length && prevW && prevH) {
+    const sx = c.w / prevW, sy = c.h / prevH;
+    c.centroids.forEach(p => { p.x *= sx; p.y *= sy; });
+  }
+}
+
+function initCentroids() {
+  const c = __constellation;
+  if (!c || c.centroids.length) return;
+  const names = Object.keys(PROJECTS);
+  // Anchor points along a shallow arc
+  const positions = [
+    { fx: 0.30, fy: 0.48 },
+    { fx: 0.55, fy: 0.60 },
+    { fx: 0.78, fy: 0.44 }
+  ];
+  for (let i = 0; i < names.length; i++) {
+    const p = positions[i] || { fx: 0.5, fy: 0.5 };
+    c.centroids.push({
+      project: names[i],
+      color:   PROJECTS[names[i]].color,
+      label:   PROJECTS[names[i]].label,
+      x: c.w * p.fx,
+      y: c.h * p.fy,
+      r: 52   // handle hit radius
+    });
+  }
+}
+
+function onConstellationPointerDown(e) {
+  const c = __constellation;
+  if (!c) return;
+  const { x, y } = pointerPos(e);
+  const hitNode = hitTestNode(x, y);
+  const hitCIdx = hitNode ? -1 : hitTestCentroid(x, y);
+  if (!hitNode && hitCIdx < 0) return;
+
+  c.canvas.setPointerCapture(e.pointerId);
+  c.canvas.style.cursor = 'grabbing';
+
+  if (hitNode) {
+    c.drag = {
+      kind: 'node', node: hitNode,
+      startX: x, startY: y,
+      offsetX: hitNode.x - x, offsetY: hitNode.y - y,
+      moved: false, pointerId: e.pointerId
+    };
+    hitNode.pinned = true;
+    hitNode.vx = hitNode.vy = 0;
+  } else {
+    const cc = c.centroids[hitCIdx];
+    c.drag = {
+      kind: 'centroid', centroid: cc,
+      startX: x, startY: y,
+      offsetX: cc.x - x, offsetY: cc.y - y,
+      moved: false, pointerId: e.pointerId
+    };
+  }
+
+  c.tooltip.classList.remove('visible');
+  e.preventDefault();
+}
+
+function onConstellationPointerDrag(e) {
+  const c = __constellation;
+  if (!c || !c.drag || e.pointerId !== c.drag.pointerId) return;
+  const { x, y } = pointerPos(e);
+  const d = c.drag;
+  const moved = Math.hypot(x - d.startX, y - d.startY);
+  if (moved > 4) d.moved = true;
+
+  if (d.kind === 'node') {
+    d.node.x = x + d.offsetX;
+    d.node.y = y + d.offsetY;
+    d.node.vx = d.node.vy = 0;
+  } else if (d.kind === 'centroid') {
+    d.centroid.x = x + d.offsetX;
+    d.centroid.y = y + d.offsetY;
+  }
+}
+
+function onConstellationPointerUp(e) {
+  const c = __constellation;
+  if (!c || !c.drag || e.pointerId !== c.drag.pointerId) return;
+  const d = c.drag;
+
+  if (d.kind === 'node') {
+    d.node.pinned = false;
+    if (!d.moved) {
+      // Treat as click — open note
+      c.canvas.style.cursor = 'grab';
+      try { c.canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+      c.drag = null;
+      openNoteFromDashboard(d.node.project, d.node.filename);
+      return;
+    }
+  }
+
+  c.canvas.style.cursor = 'grab';
+  try { c.canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+  c.drag = null;
+}
+
+function tickConstellation() {
+  const c = __constellation;
+  if (!c) return;
+
+  const ctx = c.ctx;
+  const w = c.w, h = c.h;
+  const nodes = c.nodes;
+  c.t += 1;
+
+  // Keep centroids inside the viewport softly (no orbit — user drags them)
+  for (const cc of c.centroids) {
+    const pad = 60;
+    if (cc.x < pad)       cc.x += (pad - cc.x) * 0.08;
+    if (cc.x > w - pad)   cc.x -= (cc.x - (w - pad)) * 0.08;
+    if (cc.y < pad)       cc.y += (pad - cc.y) * 0.08;
+    if (cc.y > h - pad)   cc.y -= (cc.y - (h - pad)) * 0.08;
+  }
+  const centroids = c.centroids;
+
+  // Forces
+  const GRAV = 0.0028;          // pull to project centroid
+  const REPEL = 1600;           // node-node repulsion
+  const DAMPING = 0.86;
+  const MIN_D2 = 64;
+
+  for (let i = 0; i < nodes.length; i++) {
+    const a = nodes[i];
+    if (a.pinned) continue;
+    const c0 = centroids[a.projectIdx];
+    a.vx += (c0.x - a.x) * GRAV;
+    a.vy += (c0.y - a.y) * GRAV;
+
+    for (let j = i + 1; j < nodes.length; j++) {
+      const b = nodes[j];
+      const dx = a.x - b.x, dy = a.y - b.y;
+      const d2 = Math.max(MIN_D2, dx*dx + dy*dy);
+      const f = REPEL / d2;
+      const d = Math.sqrt(d2);
+      const fx = (dx / d) * f, fy = (dy / d) * f;
+      if (!a.pinned) { a.vx += fx; a.vy += fy; }
+      if (!b.pinned) { b.vx -= fx; b.vy -= fy; }
+    }
+  }
+
+  // Integrate
+  for (const n of nodes) {
+    if (n.pinned) { n.vx = n.vy = 0; continue; }
+    n.vx *= DAMPING; n.vy *= DAMPING;
+    n.x += n.vx; n.y += n.vy;
+    // Soft bounds
+    const pad = 40;
+    if (n.x < pad)       n.vx += (pad - n.x) * 0.04;
+    if (n.x > w - pad)   n.vx -= (n.x - (w - pad)) * 0.04;
+    if (n.y < pad)       n.vy += (pad - n.y) * 0.04;
+    if (n.y > h - pad)   n.vy -= (n.y - (h - pad)) * 0.04;
+  }
+
+  // Draw
+  ctx.clearRect(0, 0, w, h);
+
+  // Edges: connect each node to its project centroid with a faint line
+  ctx.lineWidth = 1;
+  for (const n of nodes) {
+    const c0 = centroids[n.projectIdx];
+    const dimmed = c.highlightKey && n.date !== c.highlightKey;
+    ctx.strokeStyle = getColorForNode(n, dimmed ? 0.04 : 0.12);
+    ctx.beginPath();
+    ctx.moveTo(c0.x, c0.y);
+    ctx.lineTo(n.x, n.y);
+    ctx.stroke();
+  }
+
+  // Cross-project links on same date
+  const byDate = {};
+  for (const n of nodes) {
+    if (!n.date) continue;
+    (byDate[n.date] = byDate[n.date] || []).push(n);
+  }
+  ctx.lineWidth = 0.8;
+  for (const key in byDate) {
+    const group = byDate[key];
+    if (group.length < 2) continue;
+    const dimmed = c.highlightKey && key !== c.highlightKey;
+    ctx.strokeStyle = dimmed ? 'rgba(232,232,234,0.02)' : 'rgba(232,232,234,0.10)';
+    for (let i = 0; i < group.length - 1; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        ctx.beginPath();
+        ctx.moveTo(group[i].x, group[i].y);
+        ctx.lineTo(group[j].x, group[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Centroid wells + draggable handles
+  const draggingCentroid = c.drag && c.drag.kind === 'centroid' ? c.drag.centroid : null;
+  for (let i = 0; i < centroids.length; i++) {
+    const cc = centroids[i];
+    const isHover  = c.hoverCentroid === i;
+    const isDragging = draggingCentroid === cc;
+    const col = cc.color;
+
+    // Soft gravity well
+    const grad = ctx.createRadialGradient(cc.x, cc.y, 0, cc.x, cc.y, 100);
+    grad.addColorStop(0, getVarColor(col, isDragging ? 0.18 : isHover ? 0.12 : 0.08));
+    grad.addColorStop(1, getVarColor(col, 0));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cc.x, cc.y, 100, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dashed handle ring
+    ctx.save();
+    ctx.setLineDash(isDragging ? [] : [4, 4]);
+    ctx.lineWidth = isDragging ? 1.5 : 1;
+    ctx.strokeStyle = getVarColor(col, isHover || isDragging ? 0.55 : 0.22);
+    ctx.beginPath();
+    ctx.arc(cc.x, cc.y, cc.r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Label
+    ctx.fillStyle = getVarColor(col, isHover || isDragging ? 0.95 : 0.6);
+    ctx.font = `500 10px "Geist Mono", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const labelY = cc.y + cc.r + 14;
+    ctx.fillText(cc.label.toUpperCase(), cc.x, labelY);
+  }
+
+  // Nodes
+  for (const n of nodes) {
+    const isHover = c.hoverId === n.id;
+    const isDragging = c.drag && c.drag.node === n;
+    const isHighlighted = c.highlightKey && n.date === c.highlightKey;
+    const dimmed = c.highlightKey && !isHighlighted;
+
+    const breathe = isDragging ? 1.15 : 1 + Math.sin(c.t * 0.04 + n.x * 0.02) * 0.08;
+    const r = (isHover || isDragging ? n.r + 3 : n.r) * breathe;
+
+    // Halo ring for highlighted / hover / anchor / dragging
+    if (isDragging) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 16, 0, Math.PI * 2);
+      ctx.fillStyle = getColorForNode(n, 0.12);
+      ctx.fill();
+    }
+    if (isHover || isHighlighted || isDragging) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 8, 0, Math.PI * 2);
+      ctx.fillStyle = getColorForNode(n, isDragging ? 0.18 : 0.10);
+      ctx.fill();
+    }
+    if (n.isAnchor) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = getColorForNode(n, dimmed ? 0.10 : 0.35);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Core
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = getColorForNode(n, dimmed ? 0.25 : 1);
+    ctx.fill();
+
+    // Inner highlight
+    ctx.beginPath();
+    ctx.arc(n.x - r*0.3, n.y - r*0.3, r * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = dimmed ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.22)';
+    ctx.fill();
+  }
+
+  c.rafId = requestAnimationFrame(tickConstellation);
+}
+
+function getColorForNode(n, alpha) { return getVarColor(n.color, alpha); }
+
+// Resolve --<name> CSS var to rgba
+const __colorCache = {};
+function getVarColor(name, alpha) {
+  if (!__colorCache[name]) {
+    const hex = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
+    __colorCache[name] = hexToRgb(hex);
+  }
+  const { r, g, b } = __colorCache[name];
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function stopConstellation() {
+  if (!__constellation) return;
+  if (__constellation.rafId) cancelAnimationFrame(__constellation.rafId);
+  window.removeEventListener('resize', resizeConstellationCanvas);
+  window.removeEventListener('pointermove', onConstellationPointerDrag);
+  window.removeEventListener('pointerup', onConstellationPointerUp);
+  window.removeEventListener('pointercancel', onConstellationPointerUp);
+  __constellation = null;
+}
+
+function hexToRgb(h) {
+  h = h.replace('#','');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
 // ── Render calendar ─────────────────────────────────────────────────────────
@@ -1125,7 +2028,7 @@ function renderCalendar() {
     // Unique project colors present on this date
     const colors = [...new Set(notes.map(n => n.color))];
     const dotsHTML = colors.map(c =>
-      `<span class="cal-dot" style="background:var(--${c});box-shadow:0 0 4px var(--${c})"></span>`
+      `<span class="cal-dot" style="background:var(--${c})"></span>`
     ).join('');
 
     el.innerHTML =
@@ -1143,7 +2046,7 @@ function renderCalendar() {
   const legend = document.getElementById('cal-legend');
   legend.innerHTML = Object.entries(PROJECTS).map(([, cfg]) =>
     `<span class="cal-legend-item">
-      <span class="cal-dot" style="background:var(--${cfg.color});box-shadow:0 0 5px var(--${cfg.color})"></span>
+      <span class="cal-dot" style="background:var(--${cfg.color})"></span>
       <span>${cfg.label}</span>
     </span>`
   ).join('');
@@ -1156,40 +2059,39 @@ function shiftMonth(delta) {
   renderCalendar();
 }
 
-// ── Select a calendar date ─────────────────────────────────────────────────
+// ── Select a calendar date → open drawer + highlight nodes ─────────────────
 function selectCalDate(key, day, notes) {
   selectedCalDate = key;
   renderCalendar();
+
+  if (__constellation) __constellation.highlightKey = key;
 
   const [year, mm] = key.split('-');
   const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
                         'Jul','Aug','Sep','Oct','Nov','Dec'];
   const monthName = SHORT_MONTHS[parseInt(mm) - 1];
 
-  document.getElementById('notes-panel-title').textContent =
-    `${monthName} ${day}, ${year}`;
-  document.getElementById('notes-panel-sub').textContent =
-    `${notes.length} note${notes.length !== 1 ? 's' : ''} on this date`;
+  const drawer = document.getElementById('notes-drawer');
+  document.getElementById('drawer-eyebrow').textContent = `${year}`;
+  document.getElementById('drawer-title').textContent =
+    `${monthName} ${day}`;
+  document.getElementById('drawer-sub').textContent =
+    `${notes.length} note${notes.length !== 1 ? 's' : ''} captured on this date`;
 
-  const body = document.getElementById('notes-panel-body');
+  document.getElementById('drawer-body').innerHTML =
+    notes.map(n => noteEntryHTML(n)).join('');
 
-  const selectedHTML = notes.map(n => noteEntryHTML(n)).join('');
-
-  body.innerHTML = selectedHTML;
+  drawer.classList.add('open');
+  document.querySelector('.dashboard-layout')?.classList.add('drawer-open');
 }
 
-// ── Auto-select the most recent dated note on load ─────────────────────────
-function autoSelectLatestDate() {
-  const dateMap = buildDateMap();
-  const sortedKeys = Object.keys(dateMap).sort();
-  if (sortedKeys.length === 0) return;
-
-  const key   = sortedKeys[sortedKeys.length - 1];
-  const [, , dd] = key.split('-');
-  const notes = dateMap[key];
-  selectedCalDate = key;
+function closeDateDrawer() {
+  const drawer = document.getElementById('notes-drawer');
+  if (drawer) drawer.classList.remove('open');
+  document.querySelector('.dashboard-layout')?.classList.remove('drawer-open');
+  selectedCalDate = null;
+  if (__constellation) __constellation.highlightKey = null;
   renderCalendar();
-  selectCalDate(key, parseInt(dd), notes);
 }
 
 function noteEntryHTML(n) {
@@ -1208,6 +2110,7 @@ function noteEntryHTML(n) {
 
 // ── Open note from dashboard ───────────────────────────────────────────────
 function openNoteFromDashboard(project, filename) {
+  stopConstellation();
   // Exit dashboard mode
   document.querySelector('.layout').classList.remove('dashboard-mode');
   document.querySelector('main').classList.remove('dashboard-active');
@@ -1256,10 +2159,11 @@ function renderSidebar(project) {
   tree.appendChild(folder);
 
   const list = folder.querySelector('#file-list');
-  cfg.files.forEach(filename => {
+  cfg.files.forEach((filename, i) => {
     const item = document.createElement('div');
     item.className = 'file-item';
     item.dataset.file = filename;
+    item.style.setProperty('--i', i);
     const icon = filename.endsWith('.html') ? '⬡' : '◈';
     item.innerHTML = `<span class="file-icon">${icon}</span>${filename}`;
     item.onclick = () => { loadFile(project, filename, item); closeSidebar(); };
@@ -1274,10 +2178,12 @@ function selectProject(project, tabEl) {
 
   if (project === 'Dashboard') {
     document.getElementById('sidebar-toggle').style.display = 'none';
+    stopConstellation();
     showDashboard();
     return;
   }
 
+  stopConstellation();
   document.getElementById('sidebar-toggle').style.display = '';
 
   // Exit dashboard mode
@@ -1299,21 +2205,29 @@ function showLanding(project) {
   const cfg  = PROJECTS[project];
   const area = document.getElementById('content-area');
 
+  const filesHTML = cfg.files.map((f, i) => {
+    const isHtml = f.endsWith('.html');
+    return `
+      <div class="landing-file ${cfg.color}" style="--i:${i}"
+           onclick="loadFileByName('${project}','${f.replace(/'/g,"\\'")}')">
+        <span class="landing-file-icon">${isHtml ? 'html' : 'md'}</span>
+        <span class="landing-file-name">${f}</span>
+        <span class="landing-file-arrow">→</span>
+      </div>`;
+  }).join('');
+
   area.innerHTML = `
     <div class="project-landing">
-      <div class="project-card ${cfg.color}" onclick="">
+      <div class="project-hero ${cfg.color}">
         <div class="card-label ${cfg.color}">${cfg.label}</div>
         <div class="card-title">${cfg.label}</div>
-        <div class="card-desc" style="white-space:pre-line">${cfg.desc}</div>
-        <div class="card-count">◈ ${cfg.files.length} note${cfg.files.length !== 1 ? 's' : ''}</div>
+        <div class="card-desc">${cfg.desc}</div>
+        <div class="card-count">${String(cfg.files.length).padStart(2,'0')} / ${cfg.files.length === 1 ? 'note' : 'notes'}</div>
       </div>
-      ${cfg.files.map(f => `
-        <div class="project-card ${cfg.color}" style="padding:18px 24px;cursor:pointer"
-             onclick="loadFileByName('${project}','${f.replace(/'/g,"\\'")}')">
-          <div class="card-label ${cfg.color}" style="margin-bottom:6px">◈ md</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);line-height:1.5">${f}</div>
-        </div>
-      `).join('')}
+      <div class="landing-files">
+        <div class="landing-files-head">Files · ${cfg.files.length}</div>
+        ${filesHTML}
+      </div>
     </div>
   `;
 
@@ -1434,7 +2348,14 @@ async function loadFile(project, filename, itemEl) {
   document.getElementById('status-text').textContent = `Loading ${filename}…`;
 
   const area = document.getElementById('content-area');
-  area.innerHTML = `<div class="loading"><div class="loading-dot"></div>Fetching ${filename}…</div>`;
+  area.innerHTML = `
+    <div class="loading">
+      <div class="skel h1"></div>
+      <div class="skel p"></div>
+      <div class="skel p mid"></div>
+      <div class="skel p"></div>
+      <div class="skel p short"></div>
+    </div>`;
 
   const path = `/notes/${encodeURIComponent(project)}/${encodeURIComponent(filename)}`;
 

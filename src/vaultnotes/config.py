@@ -16,20 +16,20 @@ TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 THEMES = {
     "midnight": {
-        "bg": "#06101c", "bg2": "#0b1828", "bg3": "#101f32", "bg4": "#162840",
-        "border": "#1c3050", "border_2": "#2c4870",
-        "accent": "#18cdd8", "accent_dim": "#0b5a62",
-        "accent_glow": "rgba(24, 205, 216, 0.10)",
-        "text": "#ddeef8", "text_2": "#7a9ab8", "text_3": "#405870",
-        "text_muted": "#628098",
+        "bg": "#0c0c0f", "bg2": "#131318", "bg3": "#191920", "bg4": "#22222b",
+        "border": "#26262f", "border_2": "#363642",
+        "accent": "#4bb8c0", "accent_dim": "#1f4a4e",
+        "accent_glow": "rgba(75, 184, 192, 0.08)",
+        "text": "#e8e8ea", "text_2": "#a0a0a8", "text_3": "#5c5c66",
+        "text_muted": "#7a7a84",
     },
     "paper": {
-        "bg": "#f7f3ea", "bg2": "#efe8d8", "bg3": "#e8dfc9", "bg4": "#d9cdb0",
-        "border": "#c9bfa5", "border_2": "#a89e84",
-        "accent": "#1a6b73", "accent_dim": "#8fb8bc",
-        "accent_glow": "rgba(26, 107, 115, 0.10)",
-        "text": "#1a2530", "text_2": "#45566a", "text_3": "#6a7a8c",
-        "text_muted": "#556877",
+        "bg": "#f5f2eb", "bg2": "#ece7dc", "bg3": "#e3ddcd", "bg4": "#d6ceba",
+        "border": "#cabfa8", "border_2": "#a89d84",
+        "accent": "#2a7a80", "accent_dim": "#a8c8cb",
+        "accent_glow": "rgba(42, 122, 128, 0.08)",
+        "text": "#1a1a1f", "text_2": "#5a5a63", "text_3": "#8a8a93",
+        "text_muted": "#6a6a73",
     },
 }
 

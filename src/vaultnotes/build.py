@@ -85,9 +85,37 @@ def _project_dot_css(cfg: Config) -> str:
     for p in cfg.projects:
         key = _slug(p.folder)
         lines.append(
-            f".dot-{key} {{ background: var(--{key}); box-shadow: 0 0 7px var(--{key}); }}"
+            f".dot-{key} {{ background: var(--{key}); "
+            f"box-shadow: 0 0 0 2px var(--{key}-glow); }}"
         )
     return "\n".join(lines)
+
+
+def _project_hero_css(cfg: Config) -> str:
+    lines = []
+    for p in cfg.projects:
+        key = _slug(p.folder)
+        lines.append(
+            f".project-hero.{key}::before {{ "
+            f"background: linear-gradient(90deg, transparent, var(--{key}) 40%, "
+            f"var(--{key}) 60%, transparent); opacity: 0.7; }}"
+        )
+    return "\n".join(lines)
+
+
+def _project_card_label_css(cfg: Config) -> str:
+    return "\n".join(
+        f".card-label.{_slug(p.folder)} {{ color: var(--{_slug(p.folder)}); }}"
+        for p in cfg.projects
+    )
+
+
+def _project_landing_file_css(cfg: Config) -> str:
+    return "\n".join(
+        f".landing-file.{_slug(p.folder)}:hover .landing-file-arrow "
+        f"{{ color: var(--{_slug(p.folder)}); }}"
+        for p in cfg.projects
+    )
 
 
 def _project_tabs_html(cfg: Config) -> str:
@@ -122,7 +150,7 @@ def _projects_js(cfg: Config, pages_repo: Path) -> str:
             "files": files,
         }
     # Pretty print for readability + preserve AUTO-FILES markers for integrity check.
-    lines = ["{"]
+    lines = []
     for proj, data in obj.items():
         lines.append(f"  {json.dumps(proj)}: {{")
         lines.append(f"    label:  {json.dumps(data['label'])},")
@@ -134,12 +162,14 @@ def _projects_js(cfg: Config, pages_repo: Path) -> str:
             lines.append(f"      {json.dumps(fn)},")
         lines.append(f"    ] // AUTO-FILES:{proj}:END")
         lines.append("  },")
-    lines.append("}")
     return "\n".join(lines)
 
 
 def _wordmark_html(cfg: Config) -> str:
-    return f'{cfg.wordmark}<span class="accent-dot"> · </span>Notes'
+    return (
+        f'<a href="index.html" class="wordmark">{cfg.wordmark}'
+        f'<span class="accent-dot"> · </span>Notes</a>'
+    )
 
 
 def _load_template() -> str:
@@ -154,9 +184,12 @@ def render(cfg: Config, pages_repo: Path) -> str:
         "ROOT_VARS": _root_vars(cfg),
         "PROJECT_TAB_CSS": _project_tab_css(cfg),
         "PROJECT_DOT_CSS": _project_dot_css(cfg),
+        "PROJECT_HERO_CSS": _project_hero_css(cfg),
+        "PROJECT_CARD_LABEL_CSS": _project_card_label_css(cfg),
+        "PROJECT_LANDING_FILE_CSS": _project_landing_file_css(cfg),
         "PROJECT_TABS": _project_tabs_html(cfg),
         "PROJECTS_JS": _projects_js(cfg, pages_repo),
-        "FIRST_PROJECT_JS": json.dumps(cfg.projects[0].folder if cfg.projects else "Dashboard"),
+        "FIRST_PROJECT_JS": cfg.projects[0].folder if cfg.projects else "Dashboard",
     }
     out = tmpl
     for k, v in subs.items():
