@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{SITE_TITLE}}</title>
+<script>
+  (function () {
+    var t = '{{DEFAULT_THEME}}';
+    try {
+      var stored = localStorage.getItem('vaultnotes-theme');
+      if (stored === 'midnight' || stored === 'paper') t = stored;
+    } catch (e) {}
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap" rel="stylesheet">
@@ -12,22 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <style>
 
-:root {
-{{ROOT_VARS}}
-
-  --sidebar-w: 304px;
-  --header-h:  58px;
-
-  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'Geist Mono', 'SF Mono', Menlo, monospace;
-  --font-serif: 'Fraunces', Georgia, serif;
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-
-  --shadow-diffuse: 0 20px 40px -18px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.03) inset;
-}
+{{THEME_CSS}}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; }
@@ -160,6 +155,26 @@ header::after {
   white-space: nowrap;
 }
 .back-link:hover { color: var(--text-2); }
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { color: var(--accent); border-color: var(--border-2); background: var(--bg3); }
+.theme-toggle .icon { display: none; }
+:root[data-theme="midnight"] .theme-toggle .sun  { display: inline; }
+:root[data-theme="paper"]    .theme-toggle .moon { display: inline; }
 
 /* ── Layout ── */
 .layout {
@@ -1369,6 +1384,9 @@ main      { animation: fadeUp 0.38s ease 0.13s both; }
     <div class="tab-sep"></div>
 {{PROJECT_TABS}}
   </nav>
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">
+    <span class="icon sun">☀</span><span class="icon moon">☾</span>
+  </button>
   <a href="index.html" class="back-link">← portfolio</a>
 </header>
 
@@ -2172,6 +2190,13 @@ function renderSidebar(project) {
 }
 
 // ── Project switch ─────────────────────────────────────────────────────────
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme') || 'midnight';
+  var next = cur === 'midnight' ? 'paper' : 'midnight';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('vaultnotes-theme', next); } catch (e) {}
+}
+
 function selectProject(project, tabEl) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   tabEl.classList.add('active');

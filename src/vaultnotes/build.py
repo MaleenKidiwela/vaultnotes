@@ -6,7 +6,7 @@ import textwrap
 from importlib import resources
 from pathlib import Path
 
-from vaultnotes.config import Config, Project
+from vaultnotes.config import THEMES, Config, Project
 
 
 def _hex_to_rgb(h: str) -> tuple[int, int, int]:
@@ -33,37 +33,65 @@ def _slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", s.lower())
 
 
-def _root_vars(cfg: Config) -> str:
-    t = cfg.theme_colors
-    accent = t["accent"]
-    lines = [
+def _theme_vars(t: dict[str, str], accent_override: str | None = None) -> str:
+    accent = accent_override or t["accent"]
+    accent_glow = glow(accent) if accent_override else t["accent_glow"]
+    return "\n".join([
         f"  --bg:             {t['bg']};",
         f"  --bg2:            {t['bg2']};",
         f"  --bg3:            {t['bg3']};",
         f"  --bg4:            {t['bg4']};",
         f"  --border:         {t['border']};",
         f"  --border-2:       {t['border_2']};",
-        "",
         f"  --accent:         {accent};",
         f"  --accent-dim:     {t['accent_dim']};",
-        f"  --accent-glow:    {glow(accent)};",
-        "",
-    ]
+        f"  --accent-glow:    {accent_glow};",
+        f"  --text:           {t['text']};",
+        f"  --text-2:         {t['text_2']};",
+        f"  --text-3:         {t['text_3']};",
+        f"  --text-muted:     {t['text_muted']};",
+    ])
+
+
+def _theme_css(cfg: Config) -> str:
+    default_theme = cfg.theme
+    other_theme = "paper" if default_theme == "midnight" else "midnight"
+
+    project_lines = []
     for p in cfg.projects:
         key = _slug(p.folder)
-        lines += [
+        project_lines += [
             f"  --{key}:          {p.color};",
             f"  --{key}-dim:      {dim(p.color)};",
             f"  --{key}-glow:     {glow(p.color)};",
         ]
-    lines += [
-        "",
-        f"  --text:       {t['text']};",
-        f"  --text-2:     {t['text_2']};",
-        f"  --text-3:     {t['text_3']};",
-        f"  --text-muted: {t['text_muted']};",
-    ]
-    return "\n".join(lines)
+    project_block = "\n".join(project_lines)
+
+    statics = "\n".join([
+        "  --sidebar-w: 304px;",
+        "  --header-h:  58px;",
+        "  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;",
+        "  --font-mono: 'Geist Mono', 'SF Mono', Menlo, monospace;",
+        "  --font-serif: 'Fraunces', Georgia, serif;",
+        "  --radius-sm: 6px;",
+        "  --radius-md: 10px;",
+        "  --radius-lg: 14px;",
+        "  --shadow-diffuse: 0 20px 40px -18px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.03) inset;",
+    ])
+
+    default_vars = _theme_vars(THEMES[default_theme], cfg.accent)
+    other_vars = _theme_vars(THEMES[other_theme])
+
+    return (
+        f":root, :root[data-theme=\"{default_theme}\"] {{\n"
+        f"{project_block}\n\n"
+        f"{statics}\n\n"
+        f"{default_vars}\n"
+        f"}}\n\n"
+        f":root[data-theme=\"{other_theme}\"] {{\n"
+        f"{other_vars}\n"
+        f"}}"
+    )
 
 
 def _project_tab_css(cfg: Config) -> str:
@@ -181,7 +209,8 @@ def render(cfg: Config, pages_repo: Path) -> str:
     subs = {
         "SITE_TITLE": cfg.site_title,
         "WORDMARK_HTML": _wordmark_html(cfg),
-        "ROOT_VARS": _root_vars(cfg),
+        "THEME_CSS": _theme_css(cfg),
+        "DEFAULT_THEME": cfg.theme,
         "PROJECT_TAB_CSS": _project_tab_css(cfg),
         "PROJECT_DOT_CSS": _project_dot_css(cfg),
         "PROJECT_HERO_CSS": _project_hero_css(cfg),
