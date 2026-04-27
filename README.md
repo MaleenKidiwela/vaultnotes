@@ -134,7 +134,9 @@ Embedding ~hundreds of chunks runs comfortably inside the Gemini free tier. If y
 ## Updates
 
 ```bash
-pipx install --force git+https://github.com/MaleenKidiwela/vaultnotes.git
+vaultnotes upgrade
 ```
 
-Site template improvements ship with the package; the next `sync` regenerates `notes.html` automatically.
+Re-fetches the latest version from GitHub via pipx. Equivalent to `pipx install --force git+https://github.com/MaleenKidiwela/vaultnotes.git`. Pin a specific version with `vaultnotes upgrade --ref v0.2.0`.
+
+Upgrading does **not** touch your config, notes, pages repo, scheduled job, or RAG secrets — only the package code in `~/.local/pipx/venvs/vaultnotes/`. Site template improvements take effect on the next `vaultnotes sync` (which rebuilds `notes.html` from the new template).

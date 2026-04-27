@@ -4,6 +4,8 @@ import argparse
 import datetime as dt
 import os
 import random
+import shutil
+import subprocess
 import sys
 from importlib import resources
 from pathlib import Path
@@ -275,6 +277,34 @@ def cmd_rag(args: argparse.Namespace) -> int:
     return 1
 
 
+# ── upgrade ─────────────────────────────────────────────────────────────────
+PACKAGE_GIT_URL = "git+https://github.com/MaleenKidiwela/vaultnotes.git"
+
+
+def cmd_upgrade(args: argparse.Namespace) -> int:
+    ref = (args.ref or "").strip()
+    target = f"{PACKAGE_GIT_URL}@{ref}" if ref else PACKAGE_GIT_URL
+
+    if not shutil.which("pipx"):
+        _log("pipx not found on PATH.")
+        _log(f"Install pipx (brew install pipx), or upgrade manually with:")
+        _log(f"  pip install --force-reinstall {target}")
+        return 1
+
+    cmd = ["pipx", "install", "--force", target]
+    _log(f"Running: {' '.join(cmd)}")
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as e:
+        _log(f"pipx install failed (exit {e.returncode}).")
+        return e.returncode
+
+    _log("")
+    _log("Upgraded. Your config, notes, and pages repo were not touched.")
+    _log("Run `vaultnotes sync` to pick up any template improvements in notes.html.")
+    return 0
+
+
 # ── doctor ──────────────────────────────────────────────────────────────────
 def cmd_doctor(args: argparse.Namespace) -> int:
     _log(f"vaultnotes {__version__}")
@@ -319,6 +349,10 @@ def main(argv: list[str] | None = None) -> int:
     rg.add_argument("action", choices=["enable", "set-worker-url", "disable"])
     rg.add_argument("url", nargs="?", help="Worker URL (for set-worker-url)")
     rg.set_defaults(func=cmd_rag)
+
+    up = sub.add_parser("upgrade", help="Reinstall vaultnotes from GitHub via pipx")
+    up.add_argument("--ref", help="Branch, tag, or commit (default: main)")
+    up.set_defaults(func=cmd_upgrade)
 
     args = parser.parse_args(argv)
     return args.func(args)
