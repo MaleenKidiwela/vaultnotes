@@ -24,17 +24,12 @@ def ensure_repo(repo: str, local_clone: Path, branch: str = "main") -> None:
         return
 
     if gh_authed():
-        # Try to view it first; if not found, create.
+        # Try to view it first; if not found, create remote (no --clone, since
+        # `gh repo create` only accepts a name and would clone into ./<name>).
         view = subprocess.run(["gh", "repo", "view", repo], capture_output=True)
         if view.returncode != 0:
-            subprocess.check_call([
-                "gh", "repo", "create", repo,
-                "--public", "--clone", "--", str(local_clone),
-            ])
-        else:
-            subprocess.check_call([
-                "gh", "repo", "clone", repo, str(local_clone),
-            ])
+            subprocess.check_call(["gh", "repo", "create", repo, "--public"])
+        subprocess.check_call(["gh", "repo", "clone", repo, str(local_clone)])
         _set_default_branch(local_clone, branch)
         return
 
