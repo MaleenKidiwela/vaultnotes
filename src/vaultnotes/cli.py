@@ -147,6 +147,65 @@ def cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
+# ── add ─────────────────────────────────────────────────────────────────────
+def cmd_add(args: argparse.Namespace) -> int:
+    import yaml
+
+    folder = args.folder.strip()
+    if not folder:
+        _log("folder name required")
+        return 1
+
+    cfg_path = cfgmod.CONFIG_PATH
+    if not cfg_path.exists():
+        _log(f"No config at {cfg_path}. Run `vaultnotes init` first.")
+        return 1
+
+    raw = cfg_path.read_text()
+    data = yaml.safe_load(raw) or {}
+    projects = data.setdefault("projects", [])
+
+    if any(p.get("folder") == folder for p in projects):
+        _log(f"Project '{folder}' already in config.")
+        return 1
+
+    cfg = cfgmod.load()
+    folder_path = cfg.vault_path / folder
+    if not folder_path.is_dir():
+        _log(f"Folder not found in vault: {folder_path}")
+        _log("Create it in Obsidian first, then rerun.")
+        return 1
+
+    color = args.color or PALETTE[len(projects) % len(PALETTE)]
+    if not cfgmod.HEX_RE.match(color):
+        _log(f"color must be 6-digit hex (e.g. #f5a833), got {color}")
+        return 1
+    label = args.label or folder
+    description = args.description or ""
+
+    entry = {"folder": folder, "label": label, "color": color}
+    if description:
+        entry["description"] = description
+    projects.append(entry)
+
+    cfg_path.write_text(yaml.safe_dump(data, sort_keys=False, width=80))
+    _log(f"Added project '{folder}' (label={label}, color={color}).")
+
+    cfg = cfgmod.load()
+    errs = cfgmod.validate(cfg)
+    if errs:
+        _log("Config validation:")
+        for e in errs:
+            _log(f"  - {e}")
+        return 1
+
+    if args.no_sync:
+        _log("Run `vaultnotes sync` to publish the new folder.")
+        return 0
+
+    return cmd_sync(args)
+
+
 # ── sync ────────────────────────────────────────────────────────────────────
 def cmd_sync(args: argparse.Namespace) -> int:
     cfg = cfgmod.load()
@@ -340,6 +399,14 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("sync", help="Sync vault → pages repo, build, push").set_defaults(func=cmd_sync)
     sub.add_parser("build", help="Rebuild notes.html only").set_defaults(func=cmd_build)
     sub.add_parser("doctor", help="Diagnose configuration").set_defaults(func=cmd_doctor)
+
+    add = sub.add_parser("add", help="Add a project folder to publish")
+    add.add_argument("folder", help="Top-level folder name inside the vault")
+    add.add_argument("--label", help="Display label (defaults to folder name)")
+    add.add_argument("--color", help="6-digit hex color (auto-picked if omitted)")
+    add.add_argument("--description", help="One-line description")
+    add.add_argument("--no-sync", action="store_true", help="Don't run sync after adding")
+    add.set_defaults(func=cmd_add)
 
     sch = sub.add_parser("schedule", help="Manage daily launchd job")
     sch.add_argument("action", choices=["install", "uninstall", "status"])
