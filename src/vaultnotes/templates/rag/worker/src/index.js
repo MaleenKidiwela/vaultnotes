@@ -5,7 +5,7 @@
 
 const EMBED_MODEL = 'gemini-embedding-001';
 const EMBED_DIM = 768;
-const CHAT_MODEL = 'gemini-2.5-flash';
+const CHAT_MODEL = 'gemini-2.5-flash-lite';
 const MAX_QUERY_LEN = 2000;
 const MAX_CONTEXT_LEN = 20000;
 
