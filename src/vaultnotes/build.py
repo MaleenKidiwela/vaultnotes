@@ -193,6 +193,17 @@ def _projects_js(cfg: Config, pages_repo: Path) -> str:
     return "\n".join(lines)
 
 
+def _rag_link_html(cfg: Config) -> str:
+    if not cfg.rag.enabled:
+        return ""
+    return (
+        '<a href="/chat/" class="back-link" '
+        'style="margin-right:12px;display:inline-flex;align-items:center;gap:6px;">'
+        '<img src="/chat/fox.svg" alt="" width="18" height="18" '
+        'style="image-rendering:pixelated;vertical-align:middle;">Ask the notes</a>'
+    )
+
+
 def _wordmark_html(cfg: Config) -> str:
     return (
         f'<a href="index.html" class="wordmark">{cfg.wordmark}'
@@ -209,6 +220,7 @@ def render(cfg: Config, pages_repo: Path) -> str:
     subs = {
         "SITE_TITLE": cfg.site_title,
         "WORDMARK_HTML": _wordmark_html(cfg),
+        "RAG_LINK": _rag_link_html(cfg),
         "THEME_CSS": _theme_css(cfg),
         "DEFAULT_THEME": cfg.theme,
         "PROJECT_TAB_CSS": _project_tab_css(cfg),

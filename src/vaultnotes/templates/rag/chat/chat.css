@@ -1,0 +1,149 @@
+:root {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --ink: #1a1a1a;
+  --muted: #6b6b6b;
+  --line: #e6e2dc;
+  --accent: #d85a30;
+  --accent-soft: #fbe9e1;
+  --user-bg: #1a1a1a;
+  --user-ink: #faf8f5;
+  --radius: 14px;
+  --max: 760px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14130f;
+    --surface: #1c1b17;
+    --ink: #f3efe7;
+    --muted: #9c958a;
+    --line: #2c2a25;
+    --accent: #ff7a4e;
+    --accent-soft: #2a1c14;
+    --user-bg: #f3efe7;
+    --user-ink: #14130f;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  height: 100%;
+}
+
+body { display: flex; flex-direction: column; min-height: 100vh; }
+
+img { image-rendering: pixelated; }
+
+[hidden] { display: none !important; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.topbar .title { font-weight: 600; letter-spacing: -0.01em; }
+.topbar .back { color: var(--muted); text-decoration: none; font-size: 14px; }
+.topbar .back:hover { color: var(--ink); }
+.topbar .spacer { flex: 1; }
+
+.muted { color: var(--muted); }
+
+.pw-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.pw-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  text-align: center;
+}
+.pw-card .logo { width: 64px; height: 64px; display: block; margin: 0 auto 12px; }
+.pw-card h1 { margin: 8px 0 6px; font-weight: 500; font-size: 24px; }
+.pw-card form { display: flex; gap: 8px; margin-top: 18px; }
+.pw-card input[type=password] {
+  flex: 1; padding: 10px 12px; font: inherit; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px; outline: none;
+}
+.pw-card input[type=password]:focus { border-color: var(--accent); }
+.pw-card button {
+  padding: 10px 16px; font: inherit; font-weight: 500;
+  background: var(--ink); color: var(--bg); border: 0; border-radius: 10px; cursor: pointer;
+}
+.pw-card button:disabled { opacity: 0.6; cursor: progress; }
+.error { color: var(--accent); min-height: 1.4em; margin: 12px 0 0; font-size: 14px; }
+.hint { font-size: 12px; margin-top: 16px; }
+
+.chat-screen {
+  flex: 1; display: flex; flex-direction: column;
+  width: 100%; max-width: var(--max); margin: 0 auto;
+  padding: 16px; gap: 12px;
+}
+.status { font-size: 13px; padding: 6px 10px; border: 1px dashed var(--line); border-radius: 8px; }
+.status.error { color: var(--accent); border-color: var(--accent); }
+
+.messages {
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 4px 2px 8px; min-height: 200px;
+}
+.msg { max-width: 92%; display: flex; gap: 10px; }
+.msg-user {
+  align-self: flex-end; background: var(--user-bg); color: var(--user-ink);
+  padding: 10px 14px; border-radius: 14px 14px 4px 14px; white-space: pre-wrap;
+}
+.msg-assistant { align-self: flex-start; align-items: flex-start; }
+.msg-assistant .avatar {
+  width: 32px; height: 32px; flex: 0 0 32px;
+  border-radius: 8px; background: var(--accent-soft); padding: 2px;
+}
+.msg-assistant .body {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px 14px 14px 4px; padding: 10px 14px; flex: 1;
+}
+.msg-assistant .text { white-space: pre-wrap; word-wrap: break-word; }
+.citations { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.citations:empty { display: none; }
+.chip {
+  display: inline-block; padding: 4px 10px;
+  background: var(--accent-soft); color: var(--accent); border-radius: 999px;
+  font-size: 12px; text-decoration: none; border: 1px solid transparent;
+}
+.chip:hover { border-color: var(--accent); }
+
+.composer { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.composer input {
+  flex: 1; padding: 12px 14px; font: inherit; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; outline: none;
+}
+.composer input:focus { border-color: var(--accent); }
+.composer button {
+  padding: 12px 18px; font: inherit; font-weight: 500;
+  background: var(--accent); color: white; border: 0; border-radius: 12px; cursor: pointer;
+}
+.composer button:disabled { opacity: 0.6; cursor: progress; }
+
+@media (max-width: 520px) {
+  .topbar { padding: 10px 14px; }
+  .chat-screen { padding: 10px; }
+  .msg { max-width: 100%; }
+}

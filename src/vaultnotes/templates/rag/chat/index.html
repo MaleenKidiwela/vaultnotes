@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ask the notes</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="/notes.html" class="back" aria-label="Back to notes">&larr; notes</a>
+    <span class="title">Ask the notes</span>
+    <span class="spacer"></span>
+  </header>
+
+  <section id="pwScreen" class="pw-screen" aria-labelledby="pwTitle">
+    <div class="pw-card">
+      <img src="fox.svg" alt="" class="logo" width="64" height="64">
+      <h1 id="pwTitle">Ask the notes</h1>
+      <p class="muted">Enter the shared password to start chatting with the notes.</p>
+      <form id="pwForm" autocomplete="off">
+        <input id="pwInput" type="password" name="password" placeholder="password" autocomplete="current-password" required>
+        <button id="pwBtn" type="submit">Enter</button>
+      </form>
+      <p id="pwError" class="error" role="alert"></p>
+      <p class="hint muted">Your password is held only in this tab and is forgotten on refresh.</p>
+    </div>
+  </section>
+
+  <section id="chatScreen" class="chat-screen" hidden>
+    <div id="status" class="status muted">Loading index&hellip;</div>
+    <div id="messages" class="messages" aria-live="polite"></div>
+    <form id="chatForm" class="composer">
+      <input id="qInput" type="text" placeholder="Ask about the notes&hellip;" autocomplete="off" required maxlength="2000">
+      <button id="qBtn" type="submit" aria-label="Send">Send</button>
+    </form>
+  </section>
+
+  <script type="module" src="chat.js"></script>
+</body>
+</html>

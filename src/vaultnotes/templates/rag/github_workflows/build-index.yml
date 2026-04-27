@@ -1,0 +1,51 @@
+name: Build RAG index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'notes/**'
+      - 'scripts/index-notes.mjs'
+      - 'rag-config.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/build-index.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-index
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Build index
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/index-notes.mjs
+
+      - name: Commit index back to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/
+          if git diff --staged --quiet; then
+            echo "No index changes."
+          else
+            git commit -m "chore: rebuild RAG index"
+            git push
+          fi

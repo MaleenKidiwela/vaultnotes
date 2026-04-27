@@ -42,6 +42,9 @@ vaultnotes init
 | `vaultnotes schedule install` | Install daily launchd job |
 | `vaultnotes schedule uninstall` | Remove daily job |
 | `vaultnotes schedule status` | Show job + log tail |
+| `vaultnotes rag enable` | Add a password-gated chat that answers questions over your notes |
+| `vaultnotes rag set-worker-url <url>` | Save the deployed Worker URL into the chat |
+| `vaultnotes rag disable` | Stop emitting the chat link in `notes.html` |
 | `vaultnotes doctor` | Validate config and dependencies |
 
 ## Config
@@ -65,6 +68,68 @@ schedule:
 ```
 
 Only listed folders are synced — everything else in the vault stays private.
+
+## Optional: chat over your notes (RAG)
+
+Add a password-gated chat at `/chat/` that answers questions grounded in the notes you publish. Anonymous visitors still browse the rest of the site normally; only the chat panel is behind the password.
+
+Architecture: a GitHub Action embeds your notes with Gemini and writes a small index to `public/`; a tiny Cloudflare Worker proxies queries to Gemini using your API key; the browser does the retrieval locally and streams the answer back.
+
+You will need:
+- A free Google AI Studio API key (https://aistudio.google.com/apikey).
+- A Cloudflare account (free plan is fine).
+- Node.js installed locally (Homebrew: `brew install node`).
+
+### Enable
+
+```bash
+vaultnotes rag enable
+```
+
+This copies `chat/`, `worker/`, `scripts/`, a `.github/workflows/build-index.yml`, and a `rag-config.json` into your pages repo. It also flips `rag.enabled: true` in `~/.config/vaultnotes/config.yaml` so future syncs keep `rag-config.json` in step with your project list and add an "Ask the notes" link to `notes.html`.
+
+### Add the secrets
+
+**1. GitHub repo secret** — used by the indexing Action.
+
+Go to `https://github.com/<owner>/<repo>/settings/secrets/actions` → "New repository secret" → name `GEMINI_API_KEY` → paste your Google key. Use the **Secrets** tab, not Variables.
+
+While you're there, set `Settings → Actions → General → Workflow permissions` to **Read and write permissions** so the Action can commit the rebuilt index back to `main`.
+
+**2. Cloudflare Worker secrets** — used at chat time.
+
+```bash
+cd <local pages repo>/worker
+npm install
+npx wrangler login
+npx wrangler secret put GEMINI_API_KEY      # paste the same Google key
+npx wrangler secret put CHAT_PASSWORD       # any string you'll share
+npx wrangler deploy
+```
+
+Wrangler prints a URL like `https://rag-<your-repo-slug>.<your-account>.workers.dev`. Save it back into vaultnotes:
+
+```bash
+vaultnotes rag set-worker-url https://rag-<your-repo-slug>.<your-account>.workers.dev
+```
+
+### Push and use
+
+```bash
+vaultnotes sync
+```
+
+The Action runs (~1–2 min), embeds your notes, commits `public/`, and Pages redeploys. Open `https://<your-pages-domain>/chat/`, enter the chat password, and ask a question.
+
+### How updates flow
+
+Every `vaultnotes sync` (manual or via the daily launchd job) refreshes the notes in the pages repo and rewrites `rag-config.json`. The Action re-embeds and republishes within a few minutes. New notes are answerable right after.
+
+Worker code changes (anything under `worker/`) require running `npx wrangler deploy` again — pushing to GitHub does not redeploy the Worker.
+
+### Costs
+
+Embedding ~hundreds of chunks runs comfortably inside the Gemini free tier. If your vault is bigger or you index frequently and start hitting `429 RESOURCE_EXHAUSTED`, enable billing on the Cloud project linked to your AI Studio key — the dollar cost on small vaults is effectively zero.
 
 ## Updates
 

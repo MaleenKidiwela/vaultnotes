@@ -1,0 +1,10 @@
+name = "{{WORKER_NAME}}"
+main = "src/index.js"
+compatibility_date = "2025-04-01"
+
+[vars]
+ALLOWED_ORIGIN = "{{ALLOWED_ORIGIN}}"
+
+# Secrets (set via `wrangler secret put`, do NOT commit values):
+#   wrangler secret put GEMINI_API_KEY
+#   wrangler secret put CHAT_PASSWORD

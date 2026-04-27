@@ -1,0 +1,5 @@
+# Copy to .dev.vars (gitignored) for `wrangler dev`. In production, set via:
+#   wrangler secret put GEMINI_API_KEY
+#   wrangler secret put CHAT_PASSWORD
+GEMINI_API_KEY=your-google-ai-studio-key
+CHAT_PASSWORD=your-chat-password

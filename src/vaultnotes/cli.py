@@ -8,7 +8,7 @@ import sys
 from importlib import resources
 from pathlib import Path
 
-from vaultnotes import __version__, build, config as cfgmod, github, integrity, sync
+from vaultnotes import __version__, build, config as cfgmod, github, integrity, rag, sync
 
 # macOS-only guard for scheduling.
 IS_MACOS = sys.platform == "darwin"
@@ -164,6 +164,10 @@ def cmd_sync(args: argparse.Namespace) -> int:
     for proj, files in counts.items():
         _log(f"  {proj}: {len(files)} files")
 
+    if cfg.rag.enabled:
+        rag.write_rag_config_json(cfg, cfg.local_clone)
+        rag.write_chat_config(cfg, cfg.local_clone)
+
     build.build(cfg, cfg.local_clone)
     _log("  notes.html built")
 
@@ -219,6 +223,58 @@ def cmd_schedule(args: argparse.Namespace) -> int:
     return 1
 
 
+# ── rag ─────────────────────────────────────────────────────────────────────
+def cmd_rag(args: argparse.Namespace) -> int:
+    cfg = cfgmod.load()
+    errs = cfgmod.validate(cfg)
+    if errs:
+        for e in errs:
+            _log(f"config error: {e}")
+        return 1
+
+    if args.action == "enable":
+        if not (cfg.local_clone / ".git").exists():
+            _log(
+                f"Pages repo not found at {cfg.local_clone}. "
+                "Run `vaultnotes init` or `vaultnotes sync` first to clone it."
+            )
+            return 1
+        rag.update_user_config(enabled=True)
+        cfg = cfgmod.load()
+        written = rag.enable(cfg, cfg.local_clone)
+        _log(f"Wrote {len(written)} files into {cfg.local_clone}:")
+        for label in written:
+            _log(f"  + {label}")
+        _log("")
+        _log(rag.next_steps_message(cfg, cfg.local_clone))
+        return 0
+
+    if args.action == "set-worker-url":
+        url = (args.url or "").strip().rstrip("/")
+        if not url.startswith("https://"):
+            _log("worker URL must start with https://")
+            return 1
+        rag.update_user_config(worker_url=url)
+        cfg = cfgmod.load()
+        if not cfg.rag.enabled:
+            _log("RAG is disabled in config. Run `vaultnotes rag enable` first.")
+            return 1
+        target = rag.write_chat_config(cfg, cfg.local_clone)
+        _log(f"Saved worker URL: {url}")
+        _log(f"Updated: {target}")
+        _log("Run `vaultnotes sync` to push the change.")
+        return 0
+
+    if args.action == "disable":
+        rag.update_user_config(enabled=False)
+        _log("RAG disabled in config. Generated files in the pages repo are left in place;")
+        _log("delete chat/, worker/, scripts/, public/, .github/workflows/build-index.yml,")
+        _log("rag-config.json, and root package.json by hand if you want them gone.")
+        return 0
+
+    return 1
+
+
 # ── doctor ──────────────────────────────────────────────────────────────────
 def cmd_doctor(args: argparse.Namespace) -> int:
     _log(f"vaultnotes {__version__}")
@@ -258,6 +314,11 @@ def main(argv: list[str] | None = None) -> int:
     sch = sub.add_parser("schedule", help="Manage daily launchd job")
     sch.add_argument("action", choices=["install", "uninstall", "status"])
     sch.set_defaults(func=cmd_schedule)
+
+    rg = sub.add_parser("rag", help="Manage the RAG chat add-on")
+    rg.add_argument("action", choices=["enable", "set-worker-url", "disable"])
+    rg.add_argument("url", nargs="?", help="Worker URL (for set-worker-url)")
+    rg.set_defaults(func=cmd_rag)
 
     args = parser.parse_args(argv)
     return args.func(args)

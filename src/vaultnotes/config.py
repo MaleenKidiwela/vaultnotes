@@ -35,6 +35,12 @@ THEMES = {
 
 
 @dataclass
+class Rag:
+    enabled: bool = False
+    worker_url: str = ""
+
+
+@dataclass
 class Project:
     folder: str
     label: str
@@ -56,6 +62,7 @@ class Config:
     local_clone: Path
     schedule_enabled: bool
     schedule_time: str
+    rag: Rag = field(default_factory=Rag)
     schema_version: int = SCHEMA_VERSION
 
     @property
@@ -87,6 +94,7 @@ def _from_dict(data: dict[str, Any]) -> Config:
     vault = data.get("vault", {})
     gh = data.get("github", {})
     sched = data.get("schedule", {})
+    rag_block = data.get("rag", {}) or {}
     projects = [
         Project(
             folder=p["folder"],
@@ -109,6 +117,10 @@ def _from_dict(data: dict[str, Any]) -> Config:
         local_clone=_expand(gh.get("local_clone", "~/.local/share/vaultnotes/pages-repo")),
         schedule_enabled=sched.get("enabled", True),
         schedule_time=sched.get("time", "17:00"),
+        rag=Rag(
+            enabled=bool(rag_block.get("enabled", False)),
+            worker_url=str(rag_block.get("worker_url", "") or ""),
+        ),
         schema_version=data.get("schema_version", SCHEMA_VERSION),
     )
 

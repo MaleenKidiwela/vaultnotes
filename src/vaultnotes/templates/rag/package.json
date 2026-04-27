@@ -1,0 +1,15 @@
+{
+  "name": "vaultnotes-rag-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "index": "node scripts/index-notes.mjs"
+  },
+  "devDependencies": {
+    "gray-matter": "^4.0.3",
+    "minisearch": "^7.1.0",
+    "remark": "^15.0.1",
+    "remark-parse": "^11.0.0",
+    "strip-markdown": "^6.0.0"
+  }
+}
