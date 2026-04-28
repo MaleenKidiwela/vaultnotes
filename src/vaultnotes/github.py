@@ -60,8 +60,17 @@ def enable_pages(repo: str, branch: str = "main") -> bool:
     return r.returncode == 0
 
 
-def commit_and_push(repo_dir: Path, message: str, branch: str = "main") -> bool:
-    subprocess.check_call(["git", "add", "notes", "notes.html"], cwd=repo_dir)
+def commit_and_push(
+    repo_dir: Path,
+    message: str,
+    branch: str = "main",
+    paths: list[str] | None = None,
+) -> bool:
+    candidates = paths or ["notes", "notes.html"]
+    existing = [p for p in candidates if (repo_dir / p).exists()]
+    if not existing:
+        return False
+    subprocess.check_call(["git", "add", *existing], cwd=repo_dir)
     staged = subprocess.run(
         ["git", "diff", "--cached", "--quiet"], cwd=repo_dir,
     )

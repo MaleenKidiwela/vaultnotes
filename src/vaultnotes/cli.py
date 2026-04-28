@@ -239,8 +239,15 @@ def cmd_sync(args: argparse.Namespace) -> int:
             _log(f"  {e}")
         return 2
 
+    paths = ["notes", "notes.html"]
+    if cfg.rag.enabled:
+        paths += [
+            "chat", "worker", "scripts", ".github",
+            "package.json", "rag-config.json", ".gitignore",
+        ]
+
     msg = f"vaultnotes sync — {dt.datetime.now():%Y-%m-%d %H:%M:%S}"
-    pushed = github.commit_and_push(cfg.local_clone, msg, cfg.github_branch)
+    pushed = github.commit_and_push(cfg.local_clone, msg, cfg.github_branch, paths=paths)
     _log("  pushed" if pushed else "  no changes")
     return 0
 
