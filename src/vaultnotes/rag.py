@@ -188,6 +188,7 @@ def next_steps_message(cfg: Config, pages_repo: Path) -> str:
 
 _NEXT_STEPS = """
 RAG files added to {pages}.
+(Use `vaultnotes where --open` any time to reveal that folder in Finder.)
 
 To finish, you need a Google AI Studio API key and a Cloudflare account:
 
@@ -199,23 +200,22 @@ To finish, you need a Google AI Studio API key and a Cloudflare account:
      "Read and write" enabled at:
        https://github.com/{repo}/settings/actions
 
-  3. Deploy the Cloudflare Worker (only needed once, plus on each worker code change):
-       cd worker
-       npm install
-       npx wrangler login
-       npx wrangler secret put GEMINI_API_KEY     # paste the same key
-       npx wrangler secret put CHAT_PASSWORD      # any string you'll share
-       npx wrangler deploy
-     Wrangler will print a URL like:
-       https://{worker}.<your-account>.workers.dev
+  3. Log in to Cloudflare and set the Worker secrets:
+       npx wrangler login                 # one-time browser auth (run from any dir)
+       vaultnotes rag secret GEMINI_API_KEY    # paste the same Google key
+       vaultnotes rag secret CHAT_PASSWORD     # any string you'll share
 
-  4. Save the URL into vaultnotes:
+  4. Deploy the Worker (vaultnotes runs `wrangler deploy` for you):
+       vaultnotes rag deploy-worker
+     It prints a URL like https://{worker}.<your-account>.workers.dev
+
+  5. Save the URL into vaultnotes:
        vaultnotes rag set-worker-url https://{worker}.<your-account>.workers.dev
 
-  5. Commit and push the new files (vaultnotes sync will do it on the next run):
+  6. Push the new files:
        vaultnotes sync
 
-After step 5, the GitHub Action 'Build RAG index' will run, embed your notes,
+After step 6, the GitHub Action 'Build RAG index' will run, embed your notes,
 and publish /public/. The chat will be live at:
   https://<your-pages-domain>/chat/
 """

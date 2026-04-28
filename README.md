@@ -44,8 +44,11 @@ vaultnotes init
 | `vaultnotes schedule uninstall` | Remove daily job |
 | `vaultnotes schedule status` | Show job + log tail |
 | `vaultnotes rag enable` | Add a password-gated chat that answers questions over your notes |
+| `vaultnotes rag secret <NAME>` | Run `wrangler secret put` from the worker dir |
+| `vaultnotes rag deploy-worker` | Run `wrangler deploy` from the worker dir |
 | `vaultnotes rag set-worker-url <url>` | Save the deployed Worker URL into the chat |
 | `vaultnotes rag disable` | Stop emitting the chat link in `notes.html` |
+| `vaultnotes where [--open]` | Print (or reveal in Finder) the local pages-repo path |
 | `vaultnotes doctor` | Validate config and dependencies |
 
 ## Config
@@ -99,20 +102,22 @@ While you're there, set `Settings → Actions → General → Workflow permissio
 
 **2. Cloudflare Worker secrets** — used at chat time.
 
+You don't need to find the worker folder yourself; vaultnotes drives wrangler from the right directory.
+
 ```bash
-cd <local pages repo>/worker
-npm install
-npx wrangler login
-npx wrangler secret put GEMINI_API_KEY      # paste the same Google key
-npx wrangler secret put CHAT_PASSWORD       # any string you'll share
-npx wrangler deploy
+npx wrangler login                              # one-time browser auth
+vaultnotes rag secret GEMINI_API_KEY            # paste the same Google key
+vaultnotes rag secret CHAT_PASSWORD             # any string you'll share
+vaultnotes rag deploy-worker
 ```
 
-Wrangler prints a URL like `https://rag-<your-repo-slug>.<your-account>.workers.dev`. Save it back into vaultnotes:
+The deploy step prints a URL like `https://rag-<your-repo-slug>.<your-account>.workers.dev`. Save it back into vaultnotes:
 
 ```bash
 vaultnotes rag set-worker-url https://rag-<your-repo-slug>.<your-account>.workers.dev
 ```
+
+The local pages-repo lives at `~/.local/share/vaultnotes/pages-repo` by default. Run `vaultnotes where --open` to reveal it in Finder if you ever need to poke at the files directly.
 
 ### Push and use
 

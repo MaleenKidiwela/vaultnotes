@@ -333,6 +333,56 @@ def cmd_rag(args: argparse.Namespace) -> int:
         _log("Run `vaultnotes sync` to push the change.")
         return 0
 
+    if args.action == "deploy-worker":
+        worker_dir = cfg.local_clone / "worker"
+        if not worker_dir.is_dir():
+            _log(f"worker/ not found in {cfg.local_clone}.")
+            _log("Run `vaultnotes rag enable` first.")
+            return 1
+        if not shutil.which("npx"):
+            _log("npx not found. Install Node.js first: brew install node")
+            return 1
+        if not (worker_dir / "node_modules").exists():
+            _log("Installing wrangler (one-time)...")
+            try:
+                subprocess.check_call(["npm", "install"], cwd=worker_dir)
+            except subprocess.CalledProcessError as e:
+                _log(f"npm install failed (exit {e.returncode}).")
+                return e.returncode
+        _log(f"Deploying worker from {worker_dir}")
+        try:
+            subprocess.check_call(["npx", "wrangler", "deploy"], cwd=worker_dir)
+        except subprocess.CalledProcessError as e:
+            _log(f"wrangler deploy failed (exit {e.returncode}).")
+            _log("If this is the first deploy, run these once first:")
+            _log(f"  cd {worker_dir}")
+            _log("  npx wrangler login")
+            _log("  npx wrangler secret put GEMINI_API_KEY")
+            _log("  npx wrangler secret put CHAT_PASSWORD")
+            return e.returncode
+        _log("")
+        _log("Deployed. Copy the URL Wrangler printed, then run:")
+        _log("  vaultnotes rag set-worker-url <https://...workers.dev>")
+        return 0
+
+    if args.action == "secret":
+        worker_dir = cfg.local_clone / "worker"
+        if not worker_dir.is_dir():
+            _log(f"worker/ not found in {cfg.local_clone}. Run `vaultnotes rag enable` first.")
+            return 1
+        if not args.url:  # reused positional carries the secret name
+            _log("Usage: vaultnotes rag secret <SECRET_NAME>")
+            _log("Common names: GEMINI_API_KEY, CHAT_PASSWORD")
+            return 1
+        if not shutil.which("npx"):
+            _log("npx not found. Install Node.js first: brew install node")
+            return 1
+        try:
+            subprocess.check_call(["npx", "wrangler", "secret", "put", args.url], cwd=worker_dir)
+        except subprocess.CalledProcessError as e:
+            return e.returncode
+        return 0
+
     if args.action == "disable":
         rag.update_user_config(enabled=False)
         _log("RAG disabled in config. Generated files in the pages repo are left in place;")
@@ -341,6 +391,22 @@ def cmd_rag(args: argparse.Namespace) -> int:
         return 0
 
     return 1
+
+
+# ── where ───────────────────────────────────────────────────────────────────
+def cmd_where(args: argparse.Namespace) -> int:
+    cfg = cfgmod.load()
+    path = cfg.local_clone
+    _log(str(path))
+    if args.open:
+        if not IS_MACOS:
+            _log("--open is macOS-only.")
+            return 1
+        if not path.exists():
+            _log("Path does not exist yet. Run `vaultnotes sync` first.")
+            return 1
+        subprocess.check_call(["open", str(path)])
+    return 0
 
 
 # ── upgrade ─────────────────────────────────────────────────────────────────
@@ -420,9 +486,20 @@ def main(argv: list[str] | None = None) -> int:
     sch.set_defaults(func=cmd_schedule)
 
     rg = sub.add_parser("rag", help="Manage the RAG chat add-on")
-    rg.add_argument("action", choices=["enable", "set-worker-url", "disable"])
-    rg.add_argument("url", nargs="?", help="Worker URL (for set-worker-url)")
+    rg.add_argument(
+        "action",
+        choices=["enable", "set-worker-url", "deploy-worker", "secret", "disable"],
+    )
+    rg.add_argument(
+        "url",
+        nargs="?",
+        help="Worker URL (for set-worker-url) or secret name (for secret)",
+    )
     rg.set_defaults(func=cmd_rag)
+
+    wh = sub.add_parser("where", help="Print the local pages-repo path")
+    wh.add_argument("--open", action="store_true", help="Reveal in Finder (macOS)")
+    wh.set_defaults(func=cmd_where)
 
     up = sub.add_parser("upgrade", help="Reinstall vaultnotes from GitHub via pipx")
     up.add_argument("--ref", help="Branch, tag, or commit (default: main)")
