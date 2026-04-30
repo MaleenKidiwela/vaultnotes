@@ -1,6 +1,6 @@
 # vaultnotes
 
-Publish selected folders of an Obsidian vault as a browsable GitHub Pages site — with wikilinks, math, a daily-notes calendar, and a daily auto-sync. macOS, one command.
+Publish selected folders of an Obsidian vault as a browsable GitHub Pages site — with wikilinks, math, a daily-notes calendar, and a daily auto-sync. Seperate RAG based assistant to answer questions based on the synced notes. macOS, one command.
 
 ## Prerequisites
 
