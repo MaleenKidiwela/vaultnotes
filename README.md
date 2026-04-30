@@ -14,7 +14,7 @@ curl -fsSL https://raw.githubusercontent.com/MaleenKidiwela/vaultnotes/main/inst
 ```
 
 The installer handles Homebrew, Python, `pipx`, `git`, `gh`, vaultnotes itself, and the GitHub login — then drops you into the interactive setup.
-It is the safest first-run path, but not always the fastest if you already have the tools installed.
+It checks whether the core tools are already installed, skips them when present, and proceeds directly to installing or upgrading vaultnotes.
 
 Faster manual path when Homebrew, `pipx`, `git`, and `gh` are already installed:
 
