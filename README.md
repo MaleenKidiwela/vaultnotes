@@ -37,6 +37,7 @@ vaultnotes init
 
 - Asks which vault folders to publish.
 - Asks for a GitHub repo name (typically `<you>/<you>.github.io`).
+- Shows a review screen so you can edit answers before anything is written.
 - Creates the repo via `gh` if it doesn't exist, enables Pages.
 - Builds `notes.html` and pushes the first sync.
 - Offers to install a daily launchd job so syncs run automatically.

@@ -40,18 +40,17 @@ def _prompt_bool(question: str, default: bool = True) -> bool:
     return ans.startswith("y")
 
 
-def cmd_init(args: argparse.Namespace) -> int:
-    _log("vaultnotes init — interactive setup")
-
-    # Vault
-    vault = _prompt("Path to your Obsidian vault", "~/Documents/Obsidian Vault")
+def _prompt_vault_path(default: str = "~/Documents/Obsidian Vault") -> Path | None:
+    vault = _prompt("Path to your Obsidian vault", default)
     vault_path = Path(os.path.expanduser(vault))
     if not vault_path.exists():
         _log(f"  vault not found: {vault_path}")
         _log("  Install Obsidian (obsidian.md) and create the vault, then rerun.")
-        return 1
+        return None
+    return vault_path
 
-    # Project folders
+
+def _prompt_selected_folders(vault_path: Path) -> list[str]:
     subdirs = sorted(
         d.name for d in vault_path.iterdir()
         if d.is_dir() and not d.name.startswith(".")
@@ -71,44 +70,154 @@ def cmd_init(args: argparse.Namespace) -> int:
                 selected.append(subdirs[idx])
         elif tok in subdirs:
             selected.append(tok)
-    if not selected:
-        _log("No folders selected. Aborting.")
-        return 1
+    return list(dict.fromkeys(selected))
 
-    # Colors for each project
-    project_blocks: list[str] = []
+
+def _prompt_project_details(selected: list[str]) -> list[dict[str, str]]:
+    projects: list[dict[str, str]] = []
     for i, folder in enumerate(selected):
         label = _prompt(f"  Display label for '{folder}'", folder)
         color = _prompt(f"  Color for '{folder}' (hex)", PALETTE[i % len(PALETTE)])
         desc = _prompt(f"  One-line description for '{folder}'", "")
-        project_blocks.append(
-            f'  - folder: "{folder}"\n'
-            f'    label: "{label}"\n'
-            f'    color: "{color}"\n'
-            f'    description: "{desc}"'
-        )
+        projects.append({
+            "folder": folder,
+            "label": label,
+            "color": color,
+            "description": desc,
+        })
+    return projects
 
-    # Site metadata
-    title = _prompt("Site title", "Research Notes")
-    wordmark = _prompt("Short wordmark (2–3 chars)", "JD")
-    theme = _prompt("Theme (midnight | paper)", DEFAULT_THEME)
-    accent = _prompt("Global accent hex (blank to keep theme default)", "")
 
-    # GitHub
-    default_repo = ""
-    repo = _prompt("GitHub repo (owner/name, e.g. you/you.github.io)", default_repo)
-    sched_time = _prompt("Daily sync time (HH:MM)", "17:00")
+def _prompt_projects(vault_path: Path) -> list[dict[str, str]] | None:
+    selected = _prompt_selected_folders(vault_path)
+    if not selected:
+        _log("No folders selected.")
+        return None
+    return _prompt_project_details(selected)
+
+
+def _prompt_site_settings() -> dict[str, str]:
+    return {
+        "title": _prompt("Site title", "Research Notes"),
+        "wordmark": _prompt("Short wordmark (2–3 chars)", "JD"),
+        "theme": _prompt("Theme (midnight | paper)", DEFAULT_THEME),
+        "accent": _prompt("Global accent hex (blank to keep theme default)", ""),
+    }
+
+
+def _prompt_github_repo() -> str:
+    return _prompt("GitHub repo (owner/name, e.g. you/you.github.io)", "")
+
+
+def _prompt_schedule_time() -> str:
+    return _prompt("Daily sync time (HH:MM)", "17:00")
+
+
+def _project_blocks(projects: list[dict[str, str]]) -> list[str]:
+    return [
+        f'  - folder: "{p["folder"]}"\n'
+        f'    label: "{p["label"]}"\n'
+        f'    color: "{p["color"]}"\n'
+        f'    description: "{p["description"]}"'
+        for p in projects
+    ]
+
+
+def _review_setup(
+    vault_path: Path,
+    projects: list[dict[str, str]],
+    site: dict[str, str],
+    repo: str,
+    sched_time: str,
+) -> str:
+    _log("\nReview setup:")
+    _log(f"  Vault:    {vault_path}")
+    _log("  Projects:")
+    for p in projects:
+        desc = f" — {p['description']}" if p["description"] else ""
+        _log(f"    - {p['folder']} as {p['label']} ({p['color']}){desc}")
+    _log(f"  Site:     {site['title']} / {site['wordmark']} / {site['theme']}")
+    if site["accent"]:
+        _log(f"  Accent:   {site['accent']}")
+    _log(f"  GitHub:   {repo}")
+    _log(f"  Schedule: {sched_time}")
+    _log("")
+    return _prompt(
+        "Continue, edit a section, or abort",
+        "continue",
+    ).strip().lower()
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    _log("vaultnotes init — interactive setup")
+
+    vault_path = _prompt_vault_path()
+    if vault_path is None:
+        return 1
+
+    projects = _prompt_projects(vault_path)
+    if projects is None:
+        _log("No folders selected. Aborting.")
+        return 1
+
+    site = _prompt_site_settings()
+    repo = _prompt_github_repo()
+    sched_time = _prompt_schedule_time()
+
+    while True:
+        action = _review_setup(vault_path, projects, site, repo, sched_time)
+        if action in {"", "c", "continue", "y", "yes"}:
+            break
+        if action in {"a", "abort", "q", "quit", "n", "no"}:
+            _log("Setup aborted. No config was written.")
+            return 1
+        if action in {"v", "vault"}:
+            new_vault_path = _prompt_vault_path(str(vault_path))
+            if new_vault_path is not None:
+                vault_path = new_vault_path
+                new_projects = _prompt_projects(vault_path)
+                if new_projects is not None:
+                    projects = new_projects
+            continue
+        if action in {"p", "project", "projects", "folders"}:
+            new_projects = _prompt_projects(vault_path)
+            if new_projects is not None:
+                projects = new_projects
+            continue
+        if action in {"s", "site"}:
+            site = _prompt_site_settings()
+            continue
+        if action in {"g", "github", "repo"}:
+            repo = _prompt_github_repo()
+            continue
+        if action in {"t", "time", "schedule"}:
+            sched_time = _prompt_schedule_time()
+            continue
+        if action in {"all", "restart"}:
+            new_vault_path = _prompt_vault_path(str(vault_path))
+            if new_vault_path is None:
+                continue
+            new_projects = _prompt_projects(new_vault_path)
+            if new_projects is None:
+                continue
+            vault_path = new_vault_path
+            projects = new_projects
+            site = _prompt_site_settings()
+            repo = _prompt_github_repo()
+            sched_time = _prompt_schedule_time()
+            continue
+        _log("Choose continue, vault, projects, site, github, schedule, all, or abort.")
 
     # Render config
     tmpl = resources.files("vaultnotes.templates").joinpath("config.yaml.tmpl").read_text()
     body = (
         tmpl
-        .replace("{{SITE_TITLE}}", title)
-        .replace("{{WORDMARK}}", wordmark)
-        .replace("{{THEME}}", theme)
-        .replace("{{ACCENT}}", accent)
+        .replace("{{SITE_TITLE}}", site["title"])
+        .replace("{{WORDMARK}}", site["wordmark"])
+        .replace("{{THEME}}", site["theme"])
+        .replace("{{ACCENT}}", site["accent"])
         .replace("{{VAULT_PATH}}", str(vault_path))
-        .replace("{{PROJECTS_BLOCK}}", "\n".join(project_blocks))
+        .replace("{{PROJECTS_BLOCK}}", "\n".join(_project_blocks(projects)))
         .replace("{{GITHUB_REPO}}", repo)
         .replace("{{SCHEDULE_TIME}}", sched_time)
     )
