@@ -29,8 +29,26 @@ if ! command -v brew >/dev/null 2>&1; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 
-say "Installing core tools (python, pipx, git, gh)"
-brew install python pipx git gh || true
+missing_tools=()
+for tool in python3 pipx git gh; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    missing_tools+=("$tool")
+  fi
+done
+
+if [ "${#missing_tools[@]}" -gt 0 ]; then
+  brew_packages=()
+  for tool in "${missing_tools[@]}"; do
+    case "$tool" in
+      python3) brew_packages+=("python") ;;
+      *) brew_packages+=("$tool") ;;
+    esac
+  done
+  say "Installing missing core tools (${brew_packages[*]})"
+  brew install "${brew_packages[@]}"
+else
+  say "Core tools already installed"
+fi
 pipx ensurepath >/dev/null 2>&1 || true
 
 # Make pipx bins visible in this shell for subsequent commands.
