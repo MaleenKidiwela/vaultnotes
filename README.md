@@ -35,8 +35,11 @@ vaultnotes init
 
 ## What `vaultnotes init` does
 
+- Opens with Setup and Update choices.
+- Setup uses a tabbed terminal form for vault path, folders, project details, site settings, GitHub, and review.
+- Update shows command tabs for maintenance commands such as sync, doctor, RAG setup, where, and upgrade. Each tab includes editable fields where needed and a `Run command` action.
 - Asks which vault folders to publish.
-- Asks for a GitHub repo name (typically `<you>/<you>.github.io`).
+- Asks for your GitHub username and derives `<you>/<you>.github.io`.
 - Shows a review screen so you can edit answers before anything is written.
 - Creates the repo via `gh` if it doesn't exist, enables Pages.
 - Builds `notes.html` and pushes the first sync.
@@ -47,6 +50,8 @@ vaultnotes init
 | Command | Purpose |
 |---|---|
 | `vaultnotes init` | Interactive first-time setup |
+| `vaultnotes init --preview-ui` | Show a sample setup UI without writing config or running setup |
+| `vaultnotes init --mock-run` | Run the full terminal UI against a temporary demo vault, then exit without side effects |
 | `vaultnotes sync` | Sync vault → pages repo → push |
 | `vaultnotes build` | Rebuild `notes.html` only |
 | `vaultnotes add <folder>` | Add a vault folder to publish (auto-picks color, syncs by default) |

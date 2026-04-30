@@ -12,6 +12,8 @@ license = { text = "MIT" }
 authors = [{ name = "Maleen Kidiwela" }]
 dependencies = [
     "PyYAML>=6.0",
+    "prompt_toolkit>=3.0.0",
+    "questionary>=2.0.0",
 ]
 
 [project.scripts]
