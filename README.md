@@ -50,8 +50,6 @@ vaultnotes init
 | Command | Purpose |
 |---|---|
 | `vaultnotes init` | Interactive first-time setup |
-| `vaultnotes init --preview-ui` | Show a sample setup UI without writing config or running setup |
-| `vaultnotes init --mock-run` | Run the full terminal UI against a temporary demo vault, then exit without side effects |
 | `vaultnotes sync` | Sync vault → pages repo → push |
 | `vaultnotes build` | Rebuild `notes.html` only |
 | `vaultnotes add <folder>` | Add a vault folder to publish (auto-picks color, syncs by default) |
