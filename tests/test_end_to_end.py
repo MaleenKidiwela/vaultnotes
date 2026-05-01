@@ -40,6 +40,7 @@ def test_sync_build_integrity(tmp_path):
     assert "Test Notes" in html
     assert "entry.md" in html
     assert "index.md" in html
+    assert r"(\d{2}|\d{4})" in html
 
     errs = integrity.check(cfg, cfg.local_clone)
     assert errs == [], errs

@@ -1429,11 +1429,13 @@ let calYear, calMonth;
 let selectedCalDate = null;
 
 // ── Date parsing ────────────────────────────────────────────────────────────
-// Matches "MM-DD-YY Notes.md" → { year, month (0-based), day, key }
+// Matches "MM-DD-YY Notes.md" or "MM-DD-YYYY Notes.md"
+// → { year, month (0-based), day, key }
 function parseNoteDate(filename) {
-  const m = filename.match(/^(\d{2})-(\d{2})-(\d{2})\s+Notes\.md$/i);
+  const m = filename.match(/^(\d{2})-(\d{2})-(\d{2}|\d{4})\s+Notes\.md$/i);
   if (!m) return null;
-  const year  = 2000 + parseInt(m[3]);
+  const yearPart = m[3];
+  const year  = yearPart.length === 2 ? 2000 + parseInt(yearPart) : parseInt(yearPart);
   const month = parseInt(m[1]) - 1;  // 0-based
   const day   = parseInt(m[2]);
   const key   = `${year}-${m[1]}-${m[2]}`;
