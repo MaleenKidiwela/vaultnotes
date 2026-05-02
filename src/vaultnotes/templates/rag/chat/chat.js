@@ -208,12 +208,14 @@ async function ask(query) {
     return;
   }
 
+  const temporal = expandTemporalQuery(query);
+  const retrievalQuery = temporal.searchText;
   let qEmb;
   try {
     const r = await fetch(`${CONFIG.workerUrl}/embed`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ password, text: query }),
+      body: JSON.stringify({ password, text: retrievalQuery }),
     });
     if (r.status === 401) {
       password = null;
@@ -231,9 +233,9 @@ async function ask(query) {
   }
   const qVec = l2norm(new Float32Array(qEmb));
 
-  const bm25 = mini.search(query, { fuzzy: 0.2, prefix: true })
+  const bm25 = mini.search(retrievalQuery, { fuzzy: 0.2, prefix: true })
     .slice(0, CONFIG.bm25K).map((r) => ({ id: r.id }));
-  const lexical = lexicalSearch(query, CONFIG.lexicalK);
+  const lexical = lexicalSearch(retrievalQuery, CONFIG.lexicalK);
   const semantic = cosineTopK(qVec, CONFIG.semanticK);
   const fused = rrf(bm25, semantic, lexical, CONFIG.fuseK);
   const expanded = expandWithNeighbors(fused, CONFIG.neighborWindow);
@@ -273,7 +275,7 @@ async function ask(query) {
     const r = await fetch(`${CONFIG.workerUrl}/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ password, query, context }),
+      body: JSON.stringify({ password, query: temporal.answerText, context }),
     });
     if (!r.ok || !r.body) {
       const t = await r.text().catch(() => '');
@@ -344,6 +346,158 @@ function directResponse(query) {
   }
   return null;
 }
+
+function expandTemporalQuery(query) {
+  const today = localDate();
+  const additions = [];
+  const seen = new Set();
+  const add = (label, date) => {
+    if (!date) return;
+    const iso = formatIsoDate(date);
+    if (seen.has(iso)) return;
+    seen.add(iso);
+    additions.push({ label, iso, aliases: dateAliases(date) });
+  };
+
+  const q = normalizeLexical(query);
+  if (/\btoday\b/.test(q)) add('today', today);
+  if (/\byesterday\b/.test(q)) add('yesterday', addDays(today, -1));
+  if (/\btomorrow\b/.test(q)) add('tomorrow', addDays(today, 1));
+
+  for (const d of parseIsoDates(query)) add('mentioned date', d);
+  for (const d of parseNumericDates(query, today.getFullYear())) add('mentioned date', d);
+  for (const d of parseMonthNameDates(query, today.getFullYear())) add('mentioned date', d);
+
+  if (!additions.length) return { searchText: query, answerText: query };
+
+  const dateTerms = additions
+    .flatMap((item) => [item.iso, ...item.aliases])
+    .join(' ');
+  const interpretations = additions
+    .map((item) => `${item.label} = ${item.iso}`)
+    .join('; ');
+
+  return {
+    searchText: `${query} ${dateTerms}`.trim(),
+    answerText: `${query}\n\nDate interpretation for this question: today = ${formatIsoDate(today)}; ${interpretations}.`,
+  };
+}
+
+function localDate() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function addDays(date, days) {
+  const out = new Date(date);
+  out.setDate(out.getDate() + days);
+  return out;
+}
+
+function formatIsoDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function dateAliases(date) {
+  const yy = String(date.getFullYear()).slice(-2);
+  const yyyy = String(date.getFullYear());
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const month = MONTH_NAMES[date.getMonth()];
+  const shortMonth = month.slice(0, 3);
+  const day = String(date.getDate());
+  const ordinal = ordinalDay(date.getDate());
+  return [
+    `${mm}-${dd}-${yy}`,
+    `${mm}-${dd}-${yyyy}`,
+    `${mm}/${dd}/${yy}`,
+    `${mm}/${dd}/${yyyy}`,
+    `${month} ${day}`,
+    `${month} ${ordinal}`,
+    `${shortMonth} ${day}`,
+    `${shortMonth} ${ordinal}`,
+    `${ordinal} of ${month}`,
+  ];
+}
+
+function parseNumericDates(query, defaultYear) {
+  const out = [];
+  const re = /\b(\d{1,2})[-/](\d{1,2})(?:[-/](\d{2}|\d{4}))?\b/g;
+  let m;
+  while ((m = re.exec(query)) !== null) {
+    if (/\d{4}[-/]$/.test(query.slice(Math.max(0, m.index - 5), m.index))) continue;
+    const month = Number(m[1]);
+    const day = Number(m[2]);
+    const year = parseYear(m[3], defaultYear);
+    const date = validDate(year, month, day);
+    if (date) out.push(date);
+  }
+  return out;
+}
+
+function parseIsoDates(query) {
+  const out = [];
+  const re = /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/g;
+  let m;
+  while ((m = re.exec(query)) !== null) {
+    const date = validDate(Number(m[1]), Number(m[2]), Number(m[3]));
+    if (date) out.push(date);
+  }
+  return out;
+}
+
+function parseMonthNameDates(query, defaultYear) {
+  const out = [];
+  const names = MONTH_NAMES.map((m) => `${m}|${m.slice(0, 3)}`).join('|');
+  const suffix = '(?:st|nd|rd|th)?';
+  const monthFirst = new RegExp(`\\b(${names})\\.?\\s+(\\d{1,2})${suffix}(?:,?\\s+(\\d{2}|\\d{4}))?\\b`, 'gi');
+  const dayFirst = new RegExp(`\\b(\\d{1,2})${suffix}\\s+(?:of\\s+)?(${names})\\.?(?:,?\\s+(\\d{2}|\\d{4}))?\\b`, 'gi');
+  let m;
+  while ((m = monthFirst.exec(query)) !== null) {
+    const date = validDate(parseYear(m[3], defaultYear), monthNumber(m[1]), Number(m[2]));
+    if (date) out.push(date);
+  }
+  while ((m = dayFirst.exec(query)) !== null) {
+    const date = validDate(parseYear(m[3], defaultYear), monthNumber(m[2]), Number(m[1]));
+    if (date) out.push(date);
+  }
+  return out;
+}
+
+function parseYear(value, defaultYear) {
+  if (!value) return defaultYear;
+  const year = Number(value);
+  return value.length === 2 ? 2000 + year : year;
+}
+
+function monthNumber(value) {
+  const key = String(value).slice(0, 3).toLowerCase();
+  return MONTH_NAMES.findIndex((m) => m.slice(0, 3).toLowerCase() === key) + 1;
+}
+
+function validDate(year, month, day) {
+  if (!year || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
+
+function ordinalDay(day) {
+  const mod10 = day % 10;
+  const mod100 = day % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${day}st`;
+  if (mod10 === 2 && mod100 !== 12) return `${day}nd`;
+  if (mod10 === 3 && mod100 !== 13) return `${day}rd`;
+  return `${day}th`;
+}
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 function l2norm(v) {
   let s = 0;
