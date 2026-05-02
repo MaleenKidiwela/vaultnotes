@@ -7,6 +7,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import remarkParse from 'remark-parse';
@@ -18,6 +19,8 @@ const ROOT = path.resolve(__dirname, '..');
 const NOTES_DIR = path.join(ROOT, 'notes');
 const OUT_DIR = path.join(ROOT, 'public');
 const RAG_CONFIG_PATH = path.join(ROOT, 'rag-config.json');
+const CHUNKS_PATH = path.join(OUT_DIR, 'chunks.json');
+const EMBEDDINGS_PATH = path.join(OUT_DIR, 'embeddings.bin');
 
 const DEFAULTS = {
   embedModel: 'gemini-embedding-001',
@@ -294,6 +297,42 @@ function l2norm(values) {
   return out;
 }
 
+function embeddingCacheKey(text, cfg) {
+  const hash = crypto.createHash('sha256').update(text).digest('hex');
+  return `${cfg.embedModel}:${cfg.embedDim}:RETRIEVAL_DOCUMENT:${hash}`;
+}
+
+async function loadEmbeddingCache(cfg) {
+  try {
+    const [chunksRaw, embBuf] = await Promise.all([
+      fs.readFile(CHUNKS_PATH, 'utf8'),
+      fs.readFile(EMBEDDINGS_PATH),
+    ]);
+    const cachedChunks = JSON.parse(chunksRaw);
+    if (!Array.isArray(cachedChunks)) return new Map();
+
+    const cachedVectors = new Float32Array(embBuf.buffer, embBuf.byteOffset, embBuf.byteLength / Float32Array.BYTES_PER_ELEMENT);
+    if (cachedVectors.length !== cachedChunks.length * cfg.embedDim) {
+      console.warn('Embedding cache ignored: chunks/embeddings length mismatch.');
+      return new Map();
+    }
+
+    const cache = new Map();
+    for (let i = 0; i < cachedChunks.length; i++) {
+      const text = cachedChunks[i]?.text;
+      if (!text) continue;
+      const start = i * cfg.embedDim;
+      const vector = cachedVectors.slice(start, start + cfg.embedDim);
+      cache.set(embeddingCacheKey(text, cfg), vector);
+    }
+    console.log(`Loaded embedding cache with ${cache.size} vectors.`);
+    return cache;
+  } catch (e) {
+    if (e.code !== 'ENOENT') console.warn(`Embedding cache unavailable: ${e.message}`);
+    return new Map();
+  }
+}
+
 function urlForRelPath(rel) {
   return '/' + rel.split(path.sep).map(encodeURIComponent).join('/');
 }
@@ -336,10 +375,6 @@ async function embedBatch(texts, apiKey, cfg) {
 
 async function main() {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.error('GEMINI_API_KEY not set; aborting.');
-    process.exit(1);
-  }
 
   const cfg = await loadRagConfig();
   if (!cfg.folders.length) {
@@ -401,17 +436,37 @@ async function main() {
   }
 
   const embeddings = new Float32Array(chunks.length * cfg.embedDim);
+  const embeddingCache = await loadEmbeddingCache(cfg);
+  const missing = [];
+  let cacheHits = 0;
+  for (const chunk of chunks) {
+    const key = embeddingCacheKey(chunk.embedText || chunk.text, cfg);
+    const cached = embeddingCache.get(key);
+    if (cached && cached.length === cfg.embedDim) {
+      embeddings.set(cached, chunk.id * cfg.embedDim);
+      cacheHits++;
+    } else {
+      missing.push({ chunk, key });
+    }
+  }
+
   let calls = 0;
-  for (let b = 0; b < chunks.length; b += cfg.batchSize) {
-    const batch = chunks.slice(b, b + cfg.batchSize);
-    const vectors = await embedBatch(batch.map((c) => c.embedText || c.text), apiKey, cfg);
+  if (missing.length && !apiKey) {
+    console.error(`GEMINI_API_KEY not set; ${missing.length} uncached chunks need embeddings.`);
+    process.exit(1);
+  }
+  for (let b = 0; b < missing.length; b += cfg.batchSize) {
+    const batch = missing.slice(b, b + cfg.batchSize);
+    const vectors = await embedBatch(batch.map((item) => item.chunk.embedText || item.chunk.text), apiKey, cfg);
     calls++;
     vectors.forEach((vec, i) => {
       const norm = l2norm(vec);
-      embeddings.set(norm, (b + i) * cfg.embedDim);
+      const item = batch[i];
+      embeddings.set(norm, item.chunk.id * cfg.embedDim);
+      embeddingCache.set(item.key, norm);
     });
-    console.log(`  embedded ${Math.min(b + cfg.batchSize, chunks.length)}/${chunks.length}`);
-    if (b + cfg.batchSize < chunks.length) await sleep(INTER_BATCH_DELAY_MS);
+    console.log(`  embedded ${Math.min(b + cfg.batchSize, missing.length)}/${missing.length} uncached chunks`);
+    if (b + cfg.batchSize < missing.length) await sleep(INTER_BATCH_DELAY_MS);
   }
 
   const mini = new MiniSearch({
@@ -434,7 +489,7 @@ async function main() {
   );
 
   console.log(
-    `Done. notes=${files.length} chunks=${chunks.length} ~tokens=${Math.round(totalWords / 0.75)} embed_calls=${calls} bytes=${chunks.length * cfg.embedDim * 4}`,
+    `Done. notes=${files.length} chunks=${chunks.length} cache_hits=${cacheHits} embedded=${missing.length} ~tokens=${Math.round(totalWords / 0.75)} embed_calls=${calls} bytes=${chunks.length * cfg.embedDim * 4}`,
   );
 }
 
