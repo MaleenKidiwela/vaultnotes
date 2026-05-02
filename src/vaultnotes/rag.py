@@ -94,9 +94,9 @@ def write_rag_config_json(cfg: Config, pages_repo: Path) -> Path:
     data = {
         "folders": [p.folder for p in cfg.projects],
         "embedDim": 768,
-        "chunkWords": 375,
-        "overlapWords": 75,
-        "minChunkWords": 60,
+        "chunkWords": 500,
+        "overlapWords": 100,
+        "minChunkWords": 180,
         "batchSize": 25,
     }
     target = pages_repo / "rag-config.json"

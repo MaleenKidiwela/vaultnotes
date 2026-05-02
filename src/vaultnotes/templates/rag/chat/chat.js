@@ -103,9 +103,9 @@ async function loadAssets() {
       fetchBuffer(PATHS.embeddings, 'embeddings.bin'),
     ]);
     mini = MiniSearch.loadJSON(idxText, {
-      fields: ['searchText', 'noteTitle', 'sectionTitle', 'project', 'date'],
+      fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date'],
       storeFields: [
-        'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle',
+        'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle', 'sectionPath', 'filePath',
         'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date',
       ],
       idField: 'id',
@@ -245,7 +245,8 @@ async function ask(query) {
   }
 
   const context = packed.map((c) => {
-    const section = c.sectionTitle ? ` / ${c.sectionTitle}` : '';
+    const sectionName = c.sectionPath || c.sectionTitle;
+    const section = sectionName ? ` / ${sectionName}` : '';
     return `### ${c.noteTitle}${section}\n${c.text}`;
   }).join('\n\n---\n\n');
 
@@ -259,7 +260,8 @@ async function ask(query) {
     a.href = c.noteUrl;
     a.target = '_blank';
     a.rel = 'noopener';
-    a.textContent = c.sectionTitle ? `${c.noteTitle} · ${c.sectionTitle}` : c.noteTitle;
+    const sectionName = c.sectionPath || c.sectionTitle;
+    a.textContent = sectionName ? `${c.noteTitle} · ${sectionName}` : c.noteTitle;
     cites.appendChild(a);
   }
 
@@ -374,6 +376,8 @@ function lexicalSearch(query, k) {
     const haystacks = [
       [c.noteTitle, 8],
       [c.noteId, 7],
+      [c.filePath, 7],
+      [c.sectionPath, 6],
       [c.sectionTitle, 5],
       [c.project, 4],
       [c.date, 4],
@@ -457,7 +461,8 @@ function packContext(candidateChunks, maxChars) {
   let chars = 0;
   for (const c of candidateChunks) {
     if (!c || seen.has(c.id)) continue;
-    const section = c.sectionTitle ? ` / ${c.sectionTitle}` : '';
+    const sectionName = c.sectionPath || c.sectionTitle;
+    const section = sectionName ? ` / ${sectionName}` : '';
     const blockLen = `### ${c.noteTitle}${section}\n${c.text}`.length + 12;
     if (packed.length && chars + blockLen > maxChars) continue;
     packed.push(c);

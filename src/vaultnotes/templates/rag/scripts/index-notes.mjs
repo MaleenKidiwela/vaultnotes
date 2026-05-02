@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import { remark } from 'remark';
+import remarkParse from 'remark-parse';
 import strip from 'strip-markdown';
 import MiniSearch from 'minisearch';
 
@@ -21,9 +22,9 @@ const RAG_CONFIG_PATH = path.join(ROOT, 'rag-config.json');
 const DEFAULTS = {
   embedModel: 'gemini-embedding-001',
   embedDim: 768,
-  chunkWords: 375,
-  overlapWords: 75,
-  minChunkWords: 60,
+  chunkWords: 500,
+  overlapWords: 100,
+  minChunkWords: 180,
   batchSize: 25,
 };
 const MAX_RETRIES = 6;
@@ -94,17 +95,30 @@ function dateFromFilename(filename) {
   return `${year}-${m[1]}-${m[2]}`;
 }
 
-function markdownSections(markdown) {
+function nodeText(node) {
+  if (!node) return '';
+  if (typeof node.value === 'string') return node.value;
+  if (!Array.isArray(node.children)) return '';
+  return node.children.map(nodeText).join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function fallbackSections(markdown) {
   const sections = [];
-  let current = { heading: '', level: 0, lines: [] };
+  let current = { heading: '', level: 0, sectionPath: [], lines: [] };
+  const stack = [];
 
   for (const line of markdown.split(/\r?\n/)) {
     const m = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
     if (m) {
       if (current.lines.join('\n').trim()) sections.push(current);
+      const level = m[1].length;
+      stack.length = level - 1;
+      stack[level - 1] = m[2].trim();
       current = {
         heading: m[2].trim(),
-        level: m[1].length,
+        level,
+        sectionPath: stack.filter(Boolean),
+        markdown: '',
         lines: [],
       };
     } else {
@@ -112,28 +126,76 @@ function markdownSections(markdown) {
     }
   }
   if (current.lines.join('\n').trim()) sections.push(current);
-  return sections.length ? sections : [{ heading: '', level: 0, lines: [markdown] }];
+  return sections.length
+    ? sections.map((s) => ({ ...s, markdown: s.lines.join('\n') }))
+    : [{ heading: 'Overview', level: 0, sectionPath: ['Overview'], markdown }];
+}
+
+function splitIntoSections(markdown) {
+  let tree;
+  try {
+    tree = remark().use(remarkParse).parse(markdown);
+  } catch {
+    return fallbackSections(markdown);
+  }
+
+  const starts = [];
+  const stack = [];
+  for (const node of tree.children || []) {
+    if (node.type !== 'heading') continue;
+    const start = node.position?.start?.offset;
+    if (!Number.isInteger(start)) return fallbackSections(markdown);
+    const heading = nodeText(node) || 'Untitled section';
+    const level = node.depth || 1;
+    stack.length = level - 1;
+    stack[level - 1] = heading;
+    starts.push({
+      start,
+      heading,
+      level,
+      sectionPath: stack.filter(Boolean),
+    });
+  }
+
+  const sections = [];
+  const firstContent = starts[0]?.start ?? markdown.length;
+  if (markdown.slice(0, firstContent).trim()) {
+    sections.push({
+      heading: 'Overview',
+      level: 0,
+      sectionPath: ['Overview'],
+      markdown: markdown.slice(0, firstContent),
+    });
+  }
+  for (let i = 0; i < starts.length; i++) {
+    const section = starts[i];
+    const end = starts[i + 1]?.start ?? markdown.length;
+    const body = markdown.slice(section.start, end);
+    if (!body.trim()) continue;
+    sections.push({ ...section, markdown: body });
+  }
+
+  return sections.length ? sections : [{ heading: 'Overview', level: 0, sectionPath: ['Overview'], markdown }];
 }
 
 async function sectionPlainText(section, stripper) {
-  const raw = section.lines.join('\n');
-  return String(await stripper.process(raw)).replace(/\s+/g, ' ').trim();
+  return String(await stripper.process(section.markdown)).replace(/\s+/g, ' ').trim();
 }
 
-function chunkHeader({ project, noteTitle, sectionTitle, date, rel }) {
+function chunkHeader({ project, noteTitle, sectionPath, date, rel }) {
   return [
     `Project: ${project}`,
     `Note: ${noteTitle}`,
-    sectionTitle ? `Section: ${sectionTitle}` : '',
+    sectionPath ? `Section: ${sectionPath}` : '',
     date ? `Date: ${date}` : '',
-    `Path: ${rel}`,
+    `File: ${rel}`,
   ].filter(Boolean).join('\n');
 }
 
 async function buildNoteChunks({ file, rel, project, noteTitle, noteUrl, stripper, cfg }) {
   const raw = await fs.readFile(file, 'utf8');
   const { content } = matter(raw);
-  const sections = markdownSections(content);
+  const sections = splitIntoSections(content);
   const date = dateFromFilename(file);
   const chunks = [];
   let carry = null;
@@ -144,6 +206,9 @@ async function buildNoteChunks({ file, rel, project, noteTitle, noteUrl, strippe
     if (!plain) continue;
 
     const sectionTitle = section.heading || 'Overview';
+    const sectionPath = (section.sectionPath && section.sectionPath.length)
+      ? section.sectionPath.join(' / ')
+      : sectionTitle;
     const sectionId = `${rel}#${sectionOrdinal++}`;
     const sectionWords = wordCount(plain);
 
@@ -151,24 +216,37 @@ async function buildNoteChunks({ file, rel, project, noteTitle, noteUrl, strippe
       if (carry) {
         carry.text = `${carry.text}\n\n${sectionTitle}: ${plain}`;
         carry.sectionTitle = `${carry.sectionTitle}; ${sectionTitle}`;
+        carry.sectionPath = `${carry.sectionPath}; ${sectionPath}`;
       } else {
-        carry = { sectionTitle, sectionId, text: `${sectionTitle}: ${plain}` };
+        carry = { sectionTitle, sectionPath, sectionId, text: `${sectionTitle}: ${plain}` };
       }
       if (wordCount(carry.text) < cfg.chunkWords) continue;
     }
 
     if (carry) {
-      chunks.push({ sectionTitle: carry.sectionTitle, sectionId: carry.sectionId, text: carry.text });
+      chunks.push({
+        sectionTitle: carry.sectionTitle,
+        sectionPath: carry.sectionPath,
+        sectionId: carry.sectionId,
+        text: carry.text,
+      });
       carry = null;
     }
 
     if (sectionWords >= cfg.minChunkWords) {
       const pieces = chunkWordsFn(plain, cfg.chunkWords, cfg.overlapWords);
-      for (const text of pieces) chunks.push({ sectionTitle, sectionId, text });
+      for (const text of pieces) chunks.push({ sectionTitle, sectionPath, sectionId, text });
     }
   }
 
-  if (carry) chunks.push({ sectionTitle: carry.sectionTitle, sectionId: carry.sectionId, text: carry.text });
+  if (carry) {
+    chunks.push({
+      sectionTitle: carry.sectionTitle,
+      sectionPath: carry.sectionPath,
+      sectionId: carry.sectionId,
+      text: carry.text,
+    });
+  }
 
   const sectionCounts = new Map();
   for (const chunk of chunks) {
@@ -182,7 +260,7 @@ async function buildNoteChunks({ file, rel, project, noteTitle, noteUrl, strippe
     const header = chunkHeader({
       project,
       noteTitle,
-      sectionTitle: chunk.sectionTitle,
+      sectionPath: chunk.sectionPath || chunk.sectionTitle,
       date,
       rel,
     });
@@ -194,12 +272,14 @@ async function buildNoteChunks({ file, rel, project, noteTitle, noteUrl, strippe
       project,
       date,
       sectionTitle: chunk.sectionTitle,
+      sectionPath: chunk.sectionPath || chunk.sectionTitle,
+      filePath: rel,
       sectionId: chunk.sectionId,
       sectionChunkIndex,
       sectionChunkCount: sectionCounts.get(chunk.sectionId) || 1,
       chunkIndex: idx,
       text,
-      searchText: `${noteTitle} ${project} ${date} ${chunk.sectionTitle} ${chunk.text}`.trim(),
+      searchText: `${noteTitle} ${project} ${date} ${rel} ${chunk.sectionPath || chunk.sectionTitle} ${chunk.text}`.trim(),
       embedText: text,
     };
   });
@@ -307,9 +387,9 @@ async function main() {
   if (chunks.length === 0) {
     console.warn('No content to index. Writing empty artifacts.');
     const mini = new MiniSearch({
-      fields: ['searchText', 'noteTitle', 'sectionTitle', 'project', 'date'],
+      fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date'],
       storeFields: [
-        'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle',
+        'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle', 'sectionPath', 'filePath',
         'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date',
       ],
       idField: 'id',
@@ -335,11 +415,11 @@ async function main() {
   }
 
   const mini = new MiniSearch({
-    fields: ['searchText', 'noteTitle', 'sectionTitle', 'project', 'date'],
-      storeFields: [
-        'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle',
-        'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date',
-      ],
+    fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date'],
+    storeFields: [
+      'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle', 'sectionPath', 'filePath',
+      'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date',
+    ],
     idField: 'id',
   });
   mini.addAll(chunks);
