@@ -14,9 +14,11 @@ const PATHS = {
 const CONFIG = {
   workerUrl: '',
   embedDim: 768,
-  bm25K: 10,
-  semanticK: 10,
-  fuseK: 5,
+  bm25K: 14,
+  semanticK: 14,
+  fuseK: 6,
+  neighborWindow: 1,
+  maxContextChars: 18000,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -100,8 +102,11 @@ async function loadAssets() {
       fetchBuffer(PATHS.embeddings, 'embeddings.bin'),
     ]);
     mini = MiniSearch.loadJSON(idxText, {
-      fields: ['text', 'noteTitle'],
-      storeFields: ['noteTitle', 'noteUrl', 'chunkIndex', 'noteId'],
+      fields: ['searchText', 'noteTitle', 'sectionTitle', 'project', 'date'],
+      storeFields: [
+        'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle',
+        'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date',
+      ],
       idField: 'id',
     });
     chunks = chunkData;
@@ -223,17 +228,22 @@ async function ask(query) {
     .slice(0, CONFIG.bm25K).map((r) => ({ id: r.id }));
   const semantic = cosineTopK(qVec, CONFIG.semanticK);
   const fused = rrf(bm25, semantic, CONFIG.fuseK);
+  const expanded = expandWithNeighbors(fused, CONFIG.neighborWindow);
+  const packed = packContext(expanded, CONFIG.maxContextChars);
 
-  if (fused.length === 0) {
+  if (packed.length === 0) {
     textEl.textContent = 'No relevant notes found for that query.';
     return;
   }
 
-  const context = fused.map((c) => `### ${c.noteTitle}\n${c.text}`).join('\n\n---\n\n');
+  const context = packed.map((c) => {
+    const section = c.sectionTitle ? ` / ${c.sectionTitle}` : '';
+    return `### ${c.noteTitle}${section}\n${c.text}`;
+  }).join('\n\n---\n\n');
 
   cites.innerHTML = '';
   const seen = new Set();
-  for (const c of fused) {
+  for (const c of packed) {
     if (seen.has(c.noteId)) continue;
     seen.add(c.noteId);
     const a = document.createElement('a');
@@ -241,7 +251,7 @@ async function ask(query) {
     a.href = c.noteUrl;
     a.target = '_blank';
     a.rel = 'noopener';
-    a.textContent = c.noteTitle;
+    a.textContent = c.sectionTitle ? `${c.noteTitle} · ${c.sectionTitle}` : c.noteTitle;
     cites.appendChild(a);
   }
 
@@ -343,4 +353,55 @@ function rrf(bm25, semantic, k, c = 60) {
     .slice(0, k)
     .map(([id]) => chunks[id])
     .filter(Boolean);
+}
+
+function expandWithNeighbors(seedChunks, windowSize = 1) {
+  const wanted = new Map();
+  const bySection = new Map();
+  for (const c of chunks) {
+    const key = c.sectionId || c.noteId;
+    const arr = bySection.get(key) || [];
+    arr.push(c);
+    bySection.set(key, arr);
+  }
+  for (const arr of bySection.values()) {
+    arr.sort((a, b) => (a.sectionChunkIndex ?? a.chunkIndex ?? 0) - (b.sectionChunkIndex ?? b.chunkIndex ?? 0));
+  }
+
+  seedChunks.forEach((chunk, seedRank) => {
+    const key = chunk.sectionId || chunk.noteId;
+    const arr = bySection.get(key) || [chunk];
+    const idx = arr.findIndex((c) => c.id === chunk.id);
+    const center = idx === -1 ? 0 : idx;
+    for (let offset = -windowSize; offset <= windowSize; offset++) {
+      const neighbor = arr[center + offset];
+      if (!neighbor) continue;
+      const distance = Math.abs(offset);
+      const existing = wanted.get(neighbor.id);
+      const rank = seedRank + distance * 0.25;
+      if (!existing || rank < existing.rank) {
+        wanted.set(neighbor.id, { chunk: neighbor, rank });
+      }
+    }
+  });
+
+  return [...wanted.values()]
+    .sort((a, b) => a.rank - b.rank)
+    .map((x) => x.chunk);
+}
+
+function packContext(candidateChunks, maxChars) {
+  const packed = [];
+  const seen = new Set();
+  let chars = 0;
+  for (const c of candidateChunks) {
+    if (!c || seen.has(c.id)) continue;
+    const section = c.sectionTitle ? ` / ${c.sectionTitle}` : '';
+    const blockLen = `### ${c.noteTitle}${section}\n${c.text}`.length + 12;
+    if (packed.length && chars + blockLen > maxChars) continue;
+    packed.push(c);
+    seen.add(c.id);
+    chars += blockLen;
+  }
+  return packed;
 }

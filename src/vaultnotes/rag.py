@@ -96,6 +96,7 @@ def write_rag_config_json(cfg: Config, pages_repo: Path) -> Path:
         "embedDim": 768,
         "chunkWords": 375,
         "overlapWords": 75,
+        "minChunkWords": 60,
         "batchSize": 25,
     }
     target = pages_repo / "rag-config.json"
