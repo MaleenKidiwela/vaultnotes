@@ -16,6 +16,7 @@ const CONFIG = {
   embedDim: 768,
   bm25K: 14,
   semanticK: 14,
+  lexicalK: 10,
   fuseK: 6,
   neighborWindow: 1,
   maxContextChars: 18000,
@@ -201,6 +202,12 @@ async function ask(query) {
   const { textEl, cites } = appendAssistant();
   textEl.textContent = '…';
 
+  const direct = directResponse(query);
+  if (direct) {
+    textEl.textContent = direct;
+    return;
+  }
+
   let qEmb;
   try {
     const r = await fetch(`${CONFIG.workerUrl}/embed`, {
@@ -226,8 +233,9 @@ async function ask(query) {
 
   const bm25 = mini.search(query, { fuzzy: 0.2, prefix: true })
     .slice(0, CONFIG.bm25K).map((r) => ({ id: r.id }));
+  const lexical = lexicalSearch(query, CONFIG.lexicalK);
   const semantic = cosineTopK(qVec, CONFIG.semanticK);
-  const fused = rrf(bm25, semantic, CONFIG.fuseK);
+  const fused = rrf(bm25, semantic, lexical, CONFIG.fuseK);
   const expanded = expandWithNeighbors(fused, CONFIG.neighborWindow);
   const packed = packContext(expanded, CONFIG.maxContextChars);
 
@@ -321,6 +329,20 @@ async function ask(query) {
   }
 }
 
+function directResponse(query) {
+  const q = normalizeLexical(query);
+  if (/^(hi|hello|hey|yo|sup|howdy)$/.test(q)) {
+    return 'Hi. Ask me a question about your synced notes and I will answer from the indexed content.';
+  }
+  if (/^(thanks|thank you|thx)$/.test(q)) {
+    return 'You are welcome.';
+  }
+  if (/^(help|what can you do|what do you do)$/.test(q)) {
+    return 'I can answer questions about your synced notes, cite the notes I used, and help you find relevant sections. Try asking about a project, date, note title, or specific term.';
+  }
+  return null;
+}
+
 function l2norm(v) {
   let s = 0;
   for (let i = 0; i < v.length; i++) s += v[i] * v[i];
@@ -344,10 +366,49 @@ function cosineTopK(qVec, k) {
   return scored.slice(0, k);
 }
 
-function rrf(bm25, semantic, k, c = 60) {
+function lexicalSearch(query, k) {
+  const q = normalizeLexical(query);
+  if (!q) return [];
+  const scored = [];
+  for (const c of chunks) {
+    const haystacks = [
+      [c.noteTitle, 8],
+      [c.noteId, 7],
+      [c.sectionTitle, 5],
+      [c.project, 4],
+      [c.date, 4],
+      [c.text, 1],
+    ];
+    let score = 0;
+    for (const [value, weight] of haystacks) {
+      const text = normalizeLexical(value || '');
+      if (!text) continue;
+      if (text === q) score += weight * 8;
+      else if (text.startsWith(q)) score += weight * 5;
+      else if (text.includes(q)) score += weight * 2;
+    }
+    if (score > 0) scored.push({ id: c.id, score });
+  }
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, k);
+}
+
+function normalizeLexical(value) {
+  return String(value)
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[_\-./]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function rrf(bm25, semantic, lexical, k, c = 60) {
   const map = new Map();
   bm25.forEach((r, rank) => map.set(r.id, (map.get(r.id) || 0) + 1 / (c + rank)));
   semantic.forEach((r, rank) => map.set(r.id, (map.get(r.id) || 0) + 1 / (c + rank)));
+  lexical.forEach((r, rank) => map.set(r.id, (map.get(r.id) || 0) + 1.5 / (c + rank)));
   return [...map.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, k)
