@@ -5,7 +5,13 @@
 
 const EMBED_MODEL = 'gemini-embedding-001';
 const EMBED_DIM = 768;
-const CHAT_MODEL = 'gemini-2.5-flash-lite';
+const CHAT_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-3-flash-preview',
+  'gemini-3.1-flash-lite-preview',
+  'gemma-4-31b-it',
+];
 const MAX_QUERY_LEN = 2000;
 const MAX_CONTEXT_LEN = 20000;
 
@@ -127,22 +133,36 @@ export default {
       if (context.length > MAX_CONTEXT_LEN) return json({ error: 'context too long' }, 400, cors);
 
       const userText = `Context (retrieved notes):\n\n${context}\n\n---\n\nQuestion: ${query}`;
+      const upstreamBody = JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: 'user', parts: [{ text: userText }] }],
+        generationConfig: { temperature: 0.3 },
+      });
 
-      const upstream = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/${CHAT_MODEL}:streamGenerateContent?alt=sse&key=${env.GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: [{ role: 'user', parts: [{ text: userText }] }],
-            generationConfig: { temperature: 0.3 },
-          }),
-        },
-      );
-      if (!upstream.ok || !upstream.body) {
-        const detail = await upstream.text().catch(() => '');
-        return json({ error: 'chat upstream failed', status: upstream.status, detail: detail.slice(0, 500) }, 502, cors);
+      let upstream = null;
+      let usedModel = '';
+      let lastStatus = 0;
+      let lastDetail = '';
+      for (const model of CHAT_MODELS) {
+        const res = await fetchWithRetry(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${env.GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: upstreamBody,
+          },
+        );
+        if (res.ok && res.body) {
+          upstream = res;
+          usedModel = model;
+          break;
+        }
+        lastStatus = res.status;
+        lastDetail = await res.text().catch(() => '');
+        if (res.status !== 429 && res.status !== 404) break;
+      }
+      if (!upstream || !upstream.ok || !upstream.body) {
+        return json({ error: 'chat upstream failed', status: lastStatus, detail: lastDetail.slice(0, 500) }, 502, cors);
       }
       return new Response(upstream.body, {
         status: 200,
@@ -151,6 +171,7 @@ export default {
           'content-type': 'text/event-stream; charset=utf-8',
           'cache-control': 'no-cache, no-transform',
           'x-accel-buffering': 'no',
+          'x-model-used': usedModel,
         },
       });
     }

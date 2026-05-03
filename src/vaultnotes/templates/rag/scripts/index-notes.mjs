@@ -11,7 +11,6 @@ import crypto from 'node:crypto';
 import matter from 'gray-matter';
 import { remark } from 'remark';
 import remarkParse from 'remark-parse';
-import strip from 'strip-markdown';
 import MiniSearch from 'minisearch';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -71,20 +70,16 @@ async function walk(dir) {
   return out;
 }
 
-function chunkWordsFn(text, chunkSize, overlap) {
+function splitWithOverlap(text, maxWords, overlapWords) {
   const words = text.split(/\s+/).filter(Boolean);
-  const chunks = [];
-  if (!words.length) return chunks;
-  if (words.length <= chunkSize) {
-    chunks.push(words.join(' '));
-    return chunks;
-  }
-  const step = chunkSize - overlap;
+  if (words.length <= maxWords) return [words.join(' ')];
+  const step = Math.max(1, maxWords - overlapWords);
+  const out = [];
   for (let i = 0; i < words.length; i += step) {
-    chunks.push(words.slice(i, i + chunkSize).join(' '));
-    if (i + chunkSize >= words.length) break;
+    out.push(words.slice(i, i + maxWords).join(' '));
+    if (i + maxWords >= words.length) break;
   }
-  return chunks;
+  return out;
 }
 
 function wordCount(text) {
@@ -92,97 +87,71 @@ function wordCount(text) {
 }
 
 function dateFromFilename(filename) {
-  const m = path.basename(filename).match(/^(\d{2})-(\d{2})-(\d{2}|\d{4})\s+Notes\.md$/i);
-  if (!m) return '';
-  const year = m[3].length === 2 ? `20${m[3]}` : m[3];
-  return `${year}-${m[1]}-${m[2]}`;
-}
-
-function nodeText(node) {
-  if (!node) return '';
-  if (typeof node.value === 'string') return node.value;
-  if (!Array.isArray(node.children)) return '';
-  return node.children.map(nodeText).join(' ').replace(/\s+/g, ' ').trim();
-}
-
-function fallbackSections(markdown) {
-  const sections = [];
-  let current = { heading: '', level: 0, sectionPath: [], lines: [] };
-  const stack = [];
-
-  for (const line of markdown.split(/\r?\n/)) {
-    const m = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
-    if (m) {
-      if (current.lines.join('\n').trim()) sections.push(current);
-      const level = m[1].length;
-      stack.length = level - 1;
-      stack[level - 1] = m[2].trim();
-      current = {
-        heading: m[2].trim(),
-        level,
-        sectionPath: stack.filter(Boolean),
-        markdown: '',
-        lines: [],
-      };
-    } else {
-      current.lines.push(line);
+  const name = path.basename(filename);
+  let m = name.match(/(\d{4})[-_.]?(\d{2})[-_.]?(\d{2})/);
+  if (m) {
+    const month = parseInt(m[2], 10);
+    const day = parseInt(m[3], 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) return `${m[1]}-${m[2]}-${m[3]}`;
+  }
+  m = name.match(/\b(\d{2})-(\d{2})-(\d{2}|\d{4})\b/);
+  if (m) {
+    const month = parseInt(m[1], 10);
+    const day = parseInt(m[2], 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const year = m[3].length === 2 ? `20${m[3]}` : m[3];
+      return `${year}-${m[1]}-${m[2]}`;
     }
   }
-  if (current.lines.join('\n').trim()) sections.push(current);
-  return sections.length
-    ? sections.map((s) => ({ ...s, markdown: s.lines.join('\n') }))
-    : [{ heading: 'Overview', level: 0, sectionPath: ['Overview'], markdown }];
+  return '';
 }
 
-function splitIntoSections(markdown) {
-  let tree;
-  try {
-    tree = remark().use(remarkParse).parse(markdown);
-  } catch {
-    return fallbackSections(markdown);
+function flattenNode(node) {
+  if (!node) return '';
+  if (typeof node.value === 'string') return node.value;
+  if (Array.isArray(node.children)) {
+    const blockTypes = new Set([
+      'paragraph', 'heading', 'listItem', 'blockquote',
+      'tableRow', 'tableCell', 'definition', 'footnoteDefinition',
+    ]);
+    const sep = blockTypes.has(node.type) ? ' ' : '\n';
+    return node.children.map(flattenNode).join(sep);
   }
+  return '';
+}
 
-  const starts = [];
-  const stack = [];
-  for (const node of tree.children || []) {
-    if (node.type !== 'heading') continue;
-    const start = node.position?.start?.offset;
-    if (!Number.isInteger(start)) return fallbackSections(markdown);
-    const heading = nodeText(node) || 'Untitled section';
-    const level = node.depth || 1;
-    stack.length = level - 1;
-    stack[level - 1] = heading;
-    starts.push({
-      start,
-      heading,
-      level,
-      sectionPath: stack.filter(Boolean),
-    });
-  }
+function flattenNodes(nodes) {
+  return nodes
+    .map(flattenNode)
+    .join('\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+}
 
+function splitIntoSections(tree) {
   const sections = [];
-  const firstContent = starts[0]?.start ?? markdown.length;
-  if (markdown.slice(0, firstContent).trim()) {
-    sections.push({
-      heading: 'Overview',
-      level: 0,
-      sectionPath: ['Overview'],
-      markdown: markdown.slice(0, firstContent),
-    });
+  const headingStack = [];
+  let current = { headingPath: [], nodes: [] };
+  for (const node of tree.children || []) {
+    if (node.type === 'heading') {
+      if (current.nodes.length || current.headingPath.length) sections.push(current);
+      while (headingStack.length && headingStack[headingStack.length - 1].depth >= node.depth) {
+        headingStack.pop();
+      }
+      const title = flattenNode(node).trim();
+      headingStack.push({ depth: node.depth, title });
+      current = { headingPath: headingStack.map((h) => ({ ...h })), nodes: [] };
+    } else {
+      current.nodes.push(node);
+    }
   }
-  for (let i = 0; i < starts.length; i++) {
-    const section = starts[i];
-    const end = starts[i + 1]?.start ?? markdown.length;
-    const body = markdown.slice(section.start, end);
-    if (!body.trim()) continue;
-    sections.push({ ...section, markdown: body });
-  }
-
-  return sections.length ? sections : [{ heading: 'Overview', level: 0, sectionPath: ['Overview'], markdown }];
+  if (current.nodes.length || current.headingPath.length) sections.push(current);
+  return sections;
 }
 
-async function sectionPlainText(section, stripper) {
-  return String(await stripper.process(section.markdown)).replace(/\s+/g, ' ').trim();
+function rootSection(sectionPath) {
+  return sectionPath.length ? sectionPath[0] : '';
 }
 
 function chunkHeader({ project, noteTitle, sectionPath, date, rel }) {
@@ -195,61 +164,75 @@ function chunkHeader({ project, noteTitle, sectionPath, date, rel }) {
   ].filter(Boolean).join('\n');
 }
 
-async function buildNoteChunks({ file, rel, project, noteTitle, noteUrl, stripper, cfg }) {
-  const raw = await fs.readFile(file, 'utf8');
-  const { content } = matter(raw);
-  const sections = splitIntoSections(content);
-  const date = dateFromFilename(file);
-  const chunks = [];
-  let carry = null;
+function embeddingInputForChunk(chunk) {
+  const header = chunkHeader({
+    project: chunk.project,
+    noteTitle: chunk.noteTitle,
+    sectionPath: chunk.sectionPath || chunk.sectionTitle,
+    date: chunk.date || chunk.dateFromFilename,
+    rel: chunk.filePath || chunk.noteId,
+  });
+  return `${header}\n\n${chunk.text}`;
+}
+
+function noteTitleFromTree(tree, frontmatterTitle, fallback) {
+  if (frontmatterTitle) return String(frontmatterTitle);
+  const h1 = (tree.children || []).find((n) => n.type === 'heading' && n.depth === 1);
+  if (h1) {
+    const title = flattenNode(h1).trim();
+    if (title) return title;
+  }
+  return fallback;
+}
+
+function buildChunksForNote(sections, meta, cfg) {
+  const draft = [];
   let sectionOrdinal = 0;
 
   for (const section of sections) {
-    const plain = await sectionPlainText(section, stripper);
-    if (!plain) continue;
+    const text = flattenNodes(section.nodes);
+    if (!text) continue;
+    const sectionPath = section.headingPath.map((h) => h.title).filter(Boolean);
+    const sectionTitle = sectionPath.length ? sectionPath[sectionPath.length - 1] : meta.noteTitle;
+    const sectionWords = wordCount(text);
+    const sectionId = `${meta.noteId}#${sectionOrdinal++}`;
 
-    const sectionTitle = section.heading || 'Overview';
-    const sectionPath = (section.sectionPath && section.sectionPath.length)
-      ? section.sectionPath.join(' / ')
-      : sectionTitle;
-    const sectionId = `${rel}#${sectionOrdinal++}`;
-    const sectionWords = wordCount(plain);
-
-    if (sectionWords < cfg.minChunkWords) {
-      if (carry) {
-        carry.text = `${carry.text}\n\n${sectionTitle}: ${plain}`;
-        carry.sectionTitle = `${carry.sectionTitle}; ${sectionTitle}`;
-        carry.sectionPath = `${carry.sectionPath}; ${sectionPath}`;
-      } else {
-        carry = { sectionTitle, sectionPath, sectionId, text: `${sectionTitle}: ${plain}` };
-      }
-      if (wordCount(carry.text) < cfg.chunkWords) continue;
-    }
-
-    if (carry) {
-      chunks.push({
-        sectionTitle: carry.sectionTitle,
-        sectionPath: carry.sectionPath,
-        sectionId: carry.sectionId,
-        text: carry.text,
-      });
-      carry = null;
-    }
-
-    if (sectionWords >= cfg.minChunkWords) {
-      const pieces = chunkWordsFn(plain, cfg.chunkWords, cfg.overlapWords);
-      for (const text of pieces) chunks.push({ sectionTitle, sectionPath, sectionId, text });
+    if (sectionWords <= cfg.chunkWords) {
+      draft.push({ sectionTitle, sectionPath, sectionId, text });
+    } else {
+      const pieces = splitWithOverlap(text, cfg.chunkWords, cfg.overlapWords);
+      for (const piece of pieces) draft.push({ sectionTitle, sectionPath, sectionId, text: piece });
     }
   }
 
-  if (carry) {
-    chunks.push({
-      sectionTitle: carry.sectionTitle,
-      sectionPath: carry.sectionPath,
-      sectionId: carry.sectionId,
-      text: carry.text,
-    });
+  const merged = [];
+  for (const chunk of draft) {
+    const prev = merged[merged.length - 1];
+    const sameRoot = prev && rootSection(prev.sectionPath) === rootSection(chunk.sectionPath);
+    if (wordCount(chunk.text) < cfg.minChunkWords && prev && sameRoot) {
+      prev.text = `${prev.text}\n${chunk.text}`.trim();
+    } else {
+      merged.push({ ...chunk });
+    }
   }
+
+  if (merged.length >= 2) {
+    const last = merged[merged.length - 1];
+    const prev = merged[merged.length - 2];
+    if (wordCount(last.text) < cfg.minChunkWords && rootSection(last.sectionPath) === rootSection(prev.sectionPath)) {
+      prev.text = `${prev.text}\n${last.text}`.trim();
+      merged.pop();
+    }
+  }
+
+  const chunks = merged.map((chunk, idx) => ({
+    ...meta,
+    chunkIndex: idx,
+    sectionTitle: chunk.sectionTitle || meta.noteTitle,
+    sectionPath: chunk.sectionPath,
+    sectionId: chunk.sectionId,
+    text: chunk.text,
+  }));
 
   const sectionCounts = new Map();
   for (const chunk of chunks) {
@@ -260,30 +243,34 @@ async function buildNoteChunks({ file, rel, project, noteTitle, noteUrl, strippe
   return chunks.map((chunk, idx) => {
     const sectionChunkIndex = sectionIndexes.get(chunk.sectionId) || 0;
     sectionIndexes.set(chunk.sectionId, sectionChunkIndex + 1);
+    const sectionPath = Array.isArray(chunk.sectionPath) && chunk.sectionPath.length
+      ? chunk.sectionPath.join(' / ')
+      : chunk.sectionTitle;
     const header = chunkHeader({
-      project,
-      noteTitle,
-      sectionPath: chunk.sectionPath || chunk.sectionTitle,
-      date,
-      rel,
+      project: chunk.project,
+      noteTitle: chunk.noteTitle,
+      sectionPath,
+      date: chunk.date,
+      rel: chunk.filePath,
     });
-    const text = `${header}\n\n${chunk.text}`;
+    const embedText = `${header}\n\n${chunk.text}`;
     return {
-      noteId: rel,
-      noteTitle,
-      noteUrl,
-      project,
-      date,
+      noteId: chunk.noteId,
+      noteTitle: chunk.noteTitle,
+      noteUrl: chunk.noteUrl,
+      project: chunk.project,
+      date: chunk.date,
+      dateFromFilename: chunk.date,
       sectionTitle: chunk.sectionTitle,
-      sectionPath: chunk.sectionPath || chunk.sectionTitle,
-      filePath: rel,
+      sectionPath,
+      filePath: chunk.filePath,
       sectionId: chunk.sectionId,
       sectionChunkIndex,
       sectionChunkCount: sectionCounts.get(chunk.sectionId) || 1,
       chunkIndex: idx,
-      text,
-      searchText: `${noteTitle} ${project} ${date} ${rel} ${chunk.sectionPath || chunk.sectionTitle} ${chunk.text}`.trim(),
-      embedText: text,
+      text: chunk.text,
+      searchText: `${chunk.noteTitle} ${chunk.project} ${chunk.date} ${chunk.filePath} ${sectionPath} ${chunk.text}`.trim(),
+      embedText,
     };
   });
 }
@@ -319,8 +306,8 @@ async function loadEmbeddingCache(cfg) {
 
     const cache = new Map();
     for (let i = 0; i < cachedChunks.length; i++) {
-      const text = cachedChunks[i]?.text;
-      if (!text) continue;
+      if (!cachedChunks[i]?.text) continue;
+      const text = cachedChunks[i].embedText || embeddingInputForChunk(cachedChunks[i]);
       const start = i * cfg.embedDim;
       const vector = cachedVectors.slice(start, start + cfg.embedDim);
       cache.set(embeddingCacheKey(text, cfg), vector);
@@ -389,27 +376,28 @@ async function main() {
   files.sort();
   console.log(`Found ${files.length} markdown files across ${cfg.folders.join(', ')}.`);
 
-  const stripper = remark().use(strip);
+  const parser = remark().use(remarkParse);
   const chunks = [];
   let totalWords = 0;
 
   for (const file of files) {
     const raw = await fs.readFile(file, 'utf8');
     const { data, content } = matter(raw);
+    const tree = parser.parse(content);
     const rel = path.relative(ROOT, file);
     const project = path.relative(NOTES_DIR, file).split(path.sep)[0] || '';
-    const firstHeading = (content.match(/^#\s+(.+?)\s*#*\s*$/m) || [])[1];
-    const noteTitle = data.title || firstHeading || path.basename(file, path.extname(file));
-    const noteUrl = urlForRelPath(rel);
-    const noteChunks = await buildNoteChunks({
-      file,
-      rel,
-      project,
+    const noteTitle = noteTitleFromTree(tree, data.title, path.basename(file, path.extname(file)));
+    const date = dateFromFilename(file);
+    const meta = {
+      noteId: rel,
       noteTitle,
-      noteUrl,
-      stripper,
-      cfg,
-    });
+      noteUrl: urlForRelPath(rel),
+      project,
+      date,
+      filePath: rel,
+    };
+    const sections = splitIntoSections(tree);
+    const noteChunks = buildChunksForNote(sections, meta, cfg);
     for (const chunk of noteChunks) {
       totalWords += wordCount(chunk.text);
       chunks.push({ id: chunks.length, ...chunk });
@@ -422,10 +410,10 @@ async function main() {
   if (chunks.length === 0) {
     console.warn('No content to index. Writing empty artifacts.');
     const mini = new MiniSearch({
-      fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date'],
+      fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date', 'dateFromFilename'],
       storeFields: [
         'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle', 'sectionPath', 'filePath',
-        'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date',
+        'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date', 'dateFromFilename',
       ],
       idField: 'id',
     });
@@ -470,10 +458,10 @@ async function main() {
   }
 
   const mini = new MiniSearch({
-    fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date'],
+    fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date', 'dateFromFilename'],
     storeFields: [
       'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle', 'sectionPath', 'filePath',
-      'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date',
+      'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date', 'dateFromFilename',
     ],
     idField: 'id',
   });

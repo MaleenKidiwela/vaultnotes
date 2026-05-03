@@ -1219,8 +1219,7 @@ def cmd_sync(args: argparse.Namespace) -> int:
         _log(f"  {proj}: {len(files)} files")
 
     if cfg.rag.enabled:
-        rag.write_rag_config_json(cfg, cfg.local_clone)
-        rag.write_chat_config(cfg, cfg.local_clone)
+        rag.enable(cfg, cfg.local_clone)
 
     build.build(cfg, cfg.local_clone)
     _log("  notes.html built")

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from vaultnotes import build, config as cfgmod, integrity, sync
+from vaultnotes import build, config as cfgmod, integrity, rag, sync
 
 FIXTURES = Path(__file__).parent / "fixtures" / "mini_vault"
 
@@ -44,6 +44,31 @@ def test_sync_build_integrity(tmp_path):
 
     errs = integrity.check(cfg, cfg.local_clone)
     assert errs == [], errs
+
+
+def test_rag_refresh_is_idempotent(tmp_path):
+    cfg = _make_cfg(tmp_path)
+    cfg.rag.enabled = True
+    cfg.local_clone.mkdir(parents=True)
+
+    rag.enable(cfg, cfg.local_clone)
+    before = {
+        "script": (cfg.local_clone / "scripts" / "index-notes.mjs").read_text(),
+        "chat": (cfg.local_clone / "chat" / "chat.js").read_text(),
+        "config": (cfg.local_clone / "rag-config.json").read_text(),
+    }
+
+    rag.enable(cfg, cfg.local_clone)
+    after = {
+        "script": (cfg.local_clone / "scripts" / "index-notes.mjs").read_text(),
+        "chat": (cfg.local_clone / "chat" / "chat.js").read_text(),
+        "config": (cfg.local_clone / "rag-config.json").read_text(),
+    }
+
+    assert after == before
+    assert '"chunkWords": 500' in after["config"]
+    assert "embeddingCacheKey" in after["script"]
+    assert "expandTemporalQuery" in after["chat"]
 
 
 def test_validate_rejects_bad_hex(tmp_path):

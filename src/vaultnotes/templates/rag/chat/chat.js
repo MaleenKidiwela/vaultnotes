@@ -103,10 +103,10 @@ async function loadAssets() {
       fetchBuffer(PATHS.embeddings, 'embeddings.bin'),
     ]);
     mini = MiniSearch.loadJSON(idxText, {
-      fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date'],
+      fields: ['searchText', 'noteTitle', 'sectionTitle', 'sectionPath', 'filePath', 'project', 'date', 'dateFromFilename'],
       storeFields: [
         'noteTitle', 'noteUrl', 'chunkIndex', 'noteId', 'sectionTitle', 'sectionPath', 'filePath',
-        'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date',
+        'sectionId', 'sectionChunkIndex', 'sectionChunkCount', 'project', 'date', 'dateFromFilename',
       ],
       idField: 'id',
     });
@@ -237,12 +237,15 @@ async function ask(query) {
     .slice(0, CONFIG.bm25K).map((r) => ({ id: r.id }));
   const lexical = lexicalSearch(retrievalQuery, CONFIG.lexicalK);
   const semantic = cosineTopK(qVec, CONFIG.semanticK);
-  const fused = rrf(bm25, semantic, lexical, CONFIG.fuseK);
+  const fusedRrf = rrf(bm25, semantic, lexical, CONFIG.fuseK);
+  const fused = prependDateMatches(fusedRrf, temporal.dates);
   const expanded = expandWithNeighbors(fused, CONFIG.neighborWindow);
   const packed = packContext(expanded, CONFIG.maxContextChars);
 
   if (packed.length === 0) {
-    textEl.textContent = 'No relevant notes found for that query.';
+    textEl.textContent = temporal.dates.length
+      ? `No notes found for ${temporal.dates.join(', ')}.`
+      : 'No relevant notes found for that query.';
     return;
   }
 
@@ -368,7 +371,7 @@ function expandTemporalQuery(query) {
   for (const d of parseNumericDates(query, today.getFullYear())) add('mentioned date', d);
   for (const d of parseMonthNameDates(query, today.getFullYear())) add('mentioned date', d);
 
-  if (!additions.length) return { searchText: query, answerText: query };
+  if (!additions.length) return { searchText: query, answerText: query, dates: [] };
 
   const dateTerms = additions
     .flatMap((item) => [item.iso, ...item.aliases])
@@ -380,6 +383,7 @@ function expandTemporalQuery(query) {
   return {
     searchText: `${query} ${dateTerms}`.trim(),
     answerText: `${query}\n\nDate interpretation for this question: today = ${formatIsoDate(today)}; ${interpretations}.`,
+    dates: additions.map((item) => item.iso),
   };
 }
 
@@ -535,6 +539,7 @@ function lexicalSearch(query, k) {
       [c.sectionTitle, 5],
       [c.project, 4],
       [c.date, 4],
+      [c.dateFromFilename, 4],
       [c.text, 1],
     ];
     let score = 0;
@@ -572,6 +577,27 @@ function rrf(bm25, semantic, lexical, k, c = 60) {
     .slice(0, k)
     .map(([id]) => chunks[id])
     .filter(Boolean);
+}
+
+function prependDateMatches(seedChunks, dates) {
+  if (!dates || !dates.length) return seedChunks;
+  const dateSet = new Set(dates);
+  const out = [];
+  const seen = new Set();
+  for (const c of chunks) {
+    const date = c.date || c.dateFromFilename;
+    if (date && dateSet.has(date) && !seen.has(c.id)) {
+      out.push(c);
+      seen.add(c.id);
+    }
+  }
+  for (const c of seedChunks) {
+    if (!seen.has(c.id)) {
+      out.push(c);
+      seen.add(c.id);
+    }
+  }
+  return out;
 }
 
 function expandWithNeighbors(seedChunks, windowSize = 1) {
