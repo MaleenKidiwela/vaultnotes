@@ -2207,9 +2207,12 @@ function selectProject(project, tabEl) {
   if (project === 'Dashboard') {
     document.getElementById('sidebar-toggle').style.display = 'none';
     stopConstellation();
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
     showDashboard();
     return;
   }
+
+  location.hash = encodeURIComponent(project);
 
   stopConstellation();
   document.getElementById('sidebar-toggle').style.display = '';
@@ -2450,14 +2453,13 @@ marked.setOptions({ breaks: true, gfm: true });
   const hash = location.hash.slice(1);
   if (!hash) { showDashboard(); return; }
   const slash = hash.indexOf('/');
-  if (slash === -1) { showDashboard(); return; }
-  const project  = decodeURIComponent(hash.slice(0, slash));
-  const filename = decodeURIComponent(hash.slice(slash + 1));
+  const project  = decodeURIComponent(slash === -1 ? hash : hash.slice(0, slash));
+  const filename = slash === -1 ? null : decodeURIComponent(hash.slice(slash + 1));
   const tabEl = document.querySelector(`.tab[data-project="${project}"]`);
   if (!tabEl) { showDashboard(); return; }
   selectProject(project, tabEl);
   // Wait one tick for the file list to render, then load the file
-  setTimeout(() => loadFileByName(project, filename), 0);
+  if (filename) setTimeout(() => loadFileByName(project, filename), 0);
 })();
 </script>
 </body>
