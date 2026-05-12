@@ -87,12 +87,33 @@ $('pwForm').addEventListener('submit', async (e) => {
     password = pw;
     $('pwScreen').hidden = true;
     $('chatScreen').hidden = false;
+    loadModels();
     await loadAssets();
   } catch (err) {
     $('pwError').textContent = `Network error: ${err.message}`;
     $('pwBtn').disabled = false;
   }
 });
+
+async function loadModels() {
+  try {
+    const r = await fetch(`${CONFIG.workerUrl}/models`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (!r.ok) return;
+    const { models } = await r.json();
+    if (!Array.isArray(models)) return;
+    const sel = $('modelSelect');
+    for (const m of models) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      sel.appendChild(opt);
+    }
+  } catch {}
+}
 
 async function loadAssets() {
   setStatus('Loading index…');
@@ -278,7 +299,7 @@ async function ask(query) {
     const r = await fetch(`${CONFIG.workerUrl}/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ password, query: temporal.answerText, context }),
+      body: JSON.stringify({ password, query: temporal.answerText, context, model: $('modelSelect').value }),
     });
     if (!r.ok || !r.body) {
       const t = await r.text().catch(() => '');

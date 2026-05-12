@@ -30,6 +30,12 @@
 
   <section id="chatScreen" class="chat-screen" hidden>
     <div id="status" class="status muted">Loading index&hellip;</div>
+    <div class="model-row">
+      <label for="modelSelect" class="model-label muted">Model</label>
+      <select id="modelSelect" class="model-select" aria-label="Chat model">
+        <option value="auto">Auto (fallback chain)</option>
+      </select>
+    </div>
     <div id="messages" class="messages" aria-live="polite"></div>
     <form id="chatForm" class="composer">
       <input id="qInput" type="text" placeholder="Ask about the notes&hellip;" autocomplete="off" required maxlength="2000">

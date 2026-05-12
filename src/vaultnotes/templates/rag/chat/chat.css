@@ -98,6 +98,15 @@ img { image-rendering: pixelated; }
   padding: 16px; gap: 12px;
 }
 .status { font-size: 13px; padding: 6px 10px; border: 1px dashed var(--line); border-radius: 8px; }
+
+.model-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.model-label { flex: 0 0 auto; }
+.model-select {
+  flex: 1; padding: 6px 10px; font: inherit; font-size: 13px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; outline: none; cursor: pointer;
+}
+.model-select:focus { border-color: var(--accent); }
 .status.error { color: var(--accent); border-color: var(--accent); }
 
 .messages {

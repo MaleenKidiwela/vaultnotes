@@ -1,7 +1,8 @@
 // Cloudflare Worker: password-gated proxy to Gemini for vaultnotes RAG chat.
 // Endpoints:
-//   POST /embed  { password, text }            -> { embedding: number[] }
-//   POST /chat   { password, query, context }  -> SSE stream
+//   POST /embed   { password, text }                   -> { embedding: number[] }
+//   POST /chat    { password, query, context, model? } -> SSE stream
+//   POST /models  { password }                         -> { models, default }
 
 const EMBED_MODEL = 'gemini-embedding-001';
 const EMBED_DIM = 768;
@@ -99,6 +100,10 @@ export default {
       return json({ error: 'server misconfigured: missing GEMINI_API_KEY' }, 500, cors);
     }
 
+    if (url.pathname === '/models') {
+      return json({ models: CHAT_MODELS, default: 'auto' }, 200, cors);
+    }
+
     if (url.pathname === '/embed') {
       const text = String(body.text || '').trim();
       if (!text) return json({ error: 'text required' }, 400, cors);
@@ -139,11 +144,21 @@ export default {
         generationConfig: { temperature: 0.3 },
       });
 
+      const requestedModel = typeof body.model === 'string' ? body.model.trim() : '';
+      let modelChain;
+      if (!requestedModel || requestedModel === 'auto') {
+        modelChain = CHAT_MODELS;
+      } else if (CHAT_MODELS.includes(requestedModel)) {
+        modelChain = [requestedModel];
+      } else {
+        return json({ error: 'invalid model', model: requestedModel }, 400, cors);
+      }
+
       let upstream = null;
       let usedModel = '';
       let lastStatus = 0;
       let lastDetail = '';
-      for (const model of CHAT_MODELS) {
+      for (const model of modelChain) {
         const res = await fetchWithRetry(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${env.GEMINI_API_KEY}`,
           {
