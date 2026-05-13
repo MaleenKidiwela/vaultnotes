@@ -145,6 +145,10 @@ Date questions are normalized before retrieval. Queries such as "what did we do 
 
 The Worker has a Gemini chat model fallback chain. If a chat model is unavailable or quota-limited, it tries the next configured model before returning an error.
 
+### Claude (bring-your-own-key)
+
+The chat model dropdown also offers two **bring-your-own-key (BYOK)** Claude options — `claude-sonnet-4-6` and `claude-opus-4-7`. Selecting one prompts for an Anthropic API key (`sk-ant-...`) that is stored only in the browser's `localStorage` and sent straight to `api.anthropic.com` from the page using the `anthropic-dangerous-direct-browser-access` header. The Worker is bypassed for those calls, so no Anthropic key needs to live on Cloudflare or in GitHub. Embeddings still go through the Worker (Gemini). A "Change API key" button next to the dropdown lets you re-enter or clear the saved key.
+
 You will need:
 - A free Google AI Studio API key (https://aistudio.google.com/apikey).
 - A Cloudflare account (free plan is fine).

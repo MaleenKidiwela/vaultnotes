@@ -5,26 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ask the notes</title>
   <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="chat.css">
 </head>
 <body>
   <header class="topbar">
-    <a href="/notes.html" class="back" aria-label="Back to notes">&larr; notes</a>
-    <span class="title">Ask the notes</span>
-    <span class="spacer"></span>
+    <a href="/notes.html" class="back" aria-label="Back to notes">
+      <span class="back__arrow" aria-hidden="true">&larr;</span>
+      <span class="back__label">notes</span>
+    </a>
+    <span class="topbar__title">Ask the notes</span>
+    <span class="topbar__spacer"></span>
   </header>
 
   <section id="pwScreen" class="pw-screen" aria-labelledby="pwTitle">
-    <div class="pw-card">
-      <img src="fox.svg" alt="" class="logo" width="64" height="64">
-      <h1 id="pwTitle">Ask the notes</h1>
-      <p class="muted">Enter the shared password to start chatting with the notes.</p>
-      <form id="pwForm" autocomplete="off">
-        <input id="pwInput" type="password" name="password" placeholder="password" autocomplete="current-password" required>
-        <button id="pwBtn" type="submit">Enter</button>
-      </form>
-      <p id="pwError" class="error" role="alert"></p>
-      <p class="hint muted">Your password is held only in this tab and is forgotten on refresh.</p>
+    <div class="pw-screen__editorial">
+      <span class="overline">Notes vault</span>
+      <h1 id="pwTitle" class="pw-screen__title">Ask the <em>notes.</em></h1>
+      <p class="pw-screen__lead">
+        Conversational search over your synced notes &mdash; every answer
+        is grounded in your own writing and cites the underlying note.
+      </p>
+      <img src="fox.svg" alt="" class="pw-screen__mark" width="48" height="48">
+    </div>
+    <div class="pw-screen__panel">
+      <div class="pw-card">
+        <span class="overline pw-card__overline">Sign in</span>
+        <h2 class="pw-card__title">Shared password</h2>
+        <form id="pwForm" autocomplete="off" class="pw-card__form">
+          <label class="field">
+            <span class="field__label">Password</span>
+            <input id="pwInput" type="password" name="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password" required>
+          </label>
+          <button id="pwBtn" type="submit" class="btn btn--primary">
+            <span>Enter</span>
+            <span class="btn__hint" aria-hidden="true">&#x21B5;</span>
+          </button>
+        </form>
+        <p id="pwError" class="error" role="alert"></p>
+        <p class="pw-card__hint">Held in this tab only. Forgotten on refresh.</p>
+      </div>
     </div>
   </section>
 
@@ -35,6 +57,7 @@
       <select id="modelSelect" class="model-select" aria-label="Chat model">
         <option value="auto">Auto (fallback chain)</option>
       </select>
+      <button type="button" id="claudeKeyBtn" class="model-row__keybtn" hidden>Change API key</button>
     </div>
     <div id="messages" class="messages" aria-live="polite"></div>
     <form id="chatForm" class="composer">
